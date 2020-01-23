@@ -2,7 +2,7 @@
 
 #Arma 3 server script by 7thCore
 #If you do not know what any of these settings are you are better off leaving them alone. One thing might brake the other if you fiddle around with it.
-export VERSION="202001212228"
+export VERSION="202001211631"
 
 #Basics
 export NAME="Arma3Srv" #Name of the tmux session
