@@ -1,5 +1,5 @@
 # arma3srv-script
-Bash script for running Arma 3 on a linux server
+Bash script for running Arma 3 on a linux server with Antistasi mod integration 
 
 **Required packages**
 
