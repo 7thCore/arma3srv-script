@@ -2,7 +2,7 @@
 
 #Arma 3 server script by 7thCore
 #If you do not know what any of these settings are you are better off leaving them alone. One thing might brake the other if you fiddle around with it.
-export VERSION="202002031945"
+export VERSION="202002032212"
 
 #Basics
 export NAME="Arma3Srv" #Name of the tmux session
@@ -28,40 +28,40 @@ UPDATE_DIR="/home/$USER/updates" #Location of update information for the script'
 
 if [ -f "$SCRIPT_DIR/$SERVICE_NAME-config.conf" ] ; then
 	#Steamcmd
-	STEAMCMDUID=$(cat $SCRIPT_DIR/$SERVICE_NAME-config.conf | grep username | cut -d = -f2) #Your steam username
-	STEAMCMDPSW=$(cat $SCRIPT_DIR/$SERVICE_NAME-config.conf | grep password | cut -d = -f2) #Your steam password
-	BETA_BRANCH_ENABLED=$(cat $SCRIPT_DIR/$SERVICE_NAME-config.conf | grep beta_branch_enabled | cut -d = -f2) #Beta branch enabled?
-	BETA_BRANCH_NAME=$(cat $SCRIPT_DIR/$SERVICE_NAME-config.conf | grep beta_branch_name | cut -d = -f2) #Beta branch name
+	STEAMCMDUID=$(cat $SCRIPT_DIR/$SERVICE_NAME-config.conf | grep username= | cut -d = -f2) #Your steam username
+	STEAMCMDPSW=$(cat $SCRIPT_DIR/$SERVICE_NAME-config.conf | grep password= | cut -d = -f2) #Your steam password
+	BETA_BRANCH_ENABLED=$(cat $SCRIPT_DIR/$SERVICE_NAME-config.conf | grep beta_branch_enabled= | cut -d = -f2) #Beta branch enabled?
+	BETA_BRANCH_NAME=$(cat $SCRIPT_DIR/$SERVICE_NAME-config.conf | grep beta_branch_name= | cut -d = -f2) #Beta branch name
 
 	#Email configuration
-	EMAIL_SENDER=$(cat $SCRIPT_DIR/$SERVICE_NAME-config.conf | grep email_sender | cut -d = -f2) #Send emails from this address
-	EMAIL_RECIPIENT=$(cat $SCRIPT_DIR/$SERVICE_NAME-config.conf | grep email_recipient | cut -d = -f2) #Send emails to this address
-	EMAIL_UPDATE=$(cat $SCRIPT_DIR/$SERVICE_NAME-config.conf | grep email_update | cut -d = -f2) #Send emails when server updates
-	EMAIL_UPDATE_SCRIPT=$(cat $SCRIPT_DIR/$SERVICE_NAME-config.conf | grep email_update_script | cut -d = -f2) #Send notification when the script updates
-	EMAIL_UPDATE_MOD=$(cat $SCRIPT_DIR/$SERVICE_NAME-config.conf | grep email_update | cut -d = -f2) #Send emails when server updates
-	EMAIL_START=$(cat $SCRIPT_DIR/$SERVICE_NAME-config.conf | grep email_start | cut -d = -f2) #Send emails when the server starts up
-	EMAIL_STOP=$(cat $SCRIPT_DIR/$SERVICE_NAME-config.conf | grep email_stop | cut -d = -f2) #Send emails when the server shuts down
-	EMAIL_CRASH=$(cat $SCRIPT_DIR/$SERVICE_NAME-config.conf | grep email_crash | cut -d = -f2) #Send emails when the server crashes
+	EMAIL_SENDER=$(cat $SCRIPT_DIR/$SERVICE_NAME-config.conf | grep email_sender= | cut -d = -f2) #Send emails from this address
+	EMAIL_RECIPIENT=$(cat $SCRIPT_DIR/$SERVICE_NAME-config.conf | grep email_recipient= | cut -d = -f2) #Send emails to this address
+	EMAIL_UPDATE=$(cat $SCRIPT_DIR/$SERVICE_NAME-config.conf | grep email_update= | cut -d = -f2) #Send emails when server updates
+	EMAIL_UPDATE_SCRIPT=$(cat $SCRIPT_DIR/$SERVICE_NAME-config.conf | grep email_update_script= | cut -d = -f2) #Send notification when the script updates
+	EMAIL_UPDATE_MOD=$(cat $SCRIPT_DIR/$SERVICE_NAME-config.conf | grep email_update= | cut -d = -f2) #Send emails when server updates
+	EMAIL_START=$(cat $SCRIPT_DIR/$SERVICE_NAME-config.conf | grep email_start= | cut -d = -f2) #Send emails when the server starts up
+	EMAIL_STOP=$(cat $SCRIPT_DIR/$SERVICE_NAME-config.conf | grep email_stop= | cut -d = -f2) #Send emails when the server shuts down
+	EMAIL_CRASH=$(cat $SCRIPT_DIR/$SERVICE_NAME-config.conf | grep email_crash= | cut -d = -f2) #Send emails when the server crashes
 
 	#Discord configuration
-	DISCORD_UPDATE=$(cat $SCRIPT_DIR/$SERVICE_NAME-config.conf | grep discord_update | cut -d = -f2) #Send notification when the server updates
-	DISCORD_UPDATE_SCRIPT=$(cat $SCRIPT_DIR/$SERVICE_NAME-config.conf | grep discord_update_script | cut -d = -f2) #Send notification when the script updates
-	DISCORD_UPDATE_MOD=$(cat $SCRIPT_DIR/$SERVICE_NAME-config.conf | grep discord_update | cut -d = -f2) #Send notification when the server updates
-	DISCORD_START=$(cat $SCRIPT_DIR/$SERVICE_NAME-config.conf | grep discord_start | cut -d = -f2) #Send notifications when the server starts
-	DISCORD_STOP=$(cat $SCRIPT_DIR/$SERVICE_NAME-config.conf | grep discord_stop | cut -d = -f2) #Send notifications when the server stops
-	DISCORD_CRASH=$(cat $SCRIPT_DIR/$SERVICE_NAME-config.conf | grep discord_crash | cut -d = -f2) #Send notifications when the server crashes
+	DISCORD_UPDATE=$(cat $SCRIPT_DIR/$SERVICE_NAME-config.conf | grep discord_update= | cut -d = -f2) #Send notification when the server updates
+	DISCORD_UPDATE_SCRIPT=$(cat $SCRIPT_DIR/$SERVICE_NAME-config.conf | grep discord_update_script= | cut -d = -f2) #Send notification when the script updates
+	DISCORD_UPDATE_MOD=$(cat $SCRIPT_DIR/$SERVICE_NAME-config.conf | grep discord_update= | cut -d = -f2) #Send notification when the server updates
+	DISCORD_START=$(cat $SCRIPT_DIR/$SERVICE_NAME-config.conf | grep discord_start= | cut -d = -f2) #Send notifications when the server starts
+	DISCORD_STOP=$(cat $SCRIPT_DIR/$SERVICE_NAME-config.conf | grep discord_stop= | cut -d = -f2) #Send notifications when the server stops
+	DISCORD_CRASH=$(cat $SCRIPT_DIR/$SERVICE_NAME-config.conf | grep discord_crash= | cut -d = -f2) #Send notifications when the server crashes
 
 	#Save game configuration
-	SAVE_DELOLD=$(cat $SCRIPT_DIR/$SERVICE_NAME-config.conf | grep save_delold | cut -d = -f2) #How many latest save files should the script leave when deleting them.
+	SAVE_DELOLD=$(cat $SCRIPT_DIR/$SERVICE_NAME-config.conf | grep save_delold= | cut -d = -f2) #How many latest save files should the script leave when deleting them.
 
 	#Backup configuration
-	BCKP_DELOLD=$(cat $SCRIPT_DIR/$SERVICE_NAME-config.conf | grep bckp_delold | cut -d = -f2) #Delete old backups.
+	BCKP_DELOLD=$(cat $SCRIPT_DIR/$SERVICE_NAME-config.conf | grep bckp_delold= | cut -d = -f2) #Delete old backups.
 
 	#Log configuration
-	LOG_DELOLD=$(cat $SCRIPT_DIR/$SERVICE_NAME-config.conf | grep log_delold | cut -d = -f2) #Delete old logs.
+	LOG_DELOLD=$(cat $SCRIPT_DIR/$SERVICE_NAME-config.conf | grep log_delold= | cut -d = -f2) #Delete old logs.
 
 	#Mod configuration
-	MODS_ENABLED=$(cat $SCRIPT_DIR/$SERVICE_NAME-config.conf | grep mods_enabled | cut -d = -f2) #Are mods enabled?
+	MODS_ENABLED=$(cat $SCRIPT_DIR/$SERVICE_NAME-config.conf | grep mods_enabled= | cut -d = -f2) #Are mods enabled?
 	MODS=$(cat $SCRIPT_DIR/$SERVICE_NAME-config.conf | grep mod_list | cut -d = -f2) #Get mod list
 else
 	echo "$(date +"%Y-%m-%d %H:%M:%S") [$VERSION] [$NAME] [INFO] (Configuration) The configuration is missing. Did you execute script installation?"
@@ -1587,10 +1587,17 @@ script_install() {
 			AVAILABLE_DATE_MOD=$(curl -s https://steamcommunity.com/sharedfiles/filedetails/changelog/$MOD_ID | grep "Update:" | head -n1 | awk -F 'Update: ' '{print $2}' | tr -d '\t' | awk -F '</div>' '{print $1}' | awk -F ' @ ' '{print $1}')
 			AVAILABLE_TIME_MOD=$(curl -s https://steamcommunity.com/sharedfiles/filedetails/changelog/$MOD_ID | grep "Update:" | head -n1 | awk -F 'Update: ' '{print $2}' | tr -d '\t' | awk -F '</div>' '{print $1}' | awk -F ' @ ' '{print $2}')
 			AVAILABLE_VERSION_MOD=$(date --date="$(printf "%s" $AVAILABLE_DATE_MOD)" +"%Y%m%d")$(date --date="$(printf "%s" $AVAILABLE_TIME_MOD)" +"%H%M")
-			su - $USER -c <<- EOF
-				steamcmd +login $STEAMCMDUID $STEAMCMDPSW +force_install_dir $SRV_DIR/ +workshop_download_item $WORKSHOP_APPID $MOD_ID +quit
-				ln -s $SRV_DIR/steamapps/workshop/content/$WORKSHOP_APPID/$MOD_ID /home/$USER/server/@$MOD_NAME
-			EOF
+			while [[ "$STEAMCMDSUCCESSMODS" != "0" ]]; do
+				su - $USER -c "steamcmd +login $STEAMCMDUID $STEAMCMDPSW +force_install_dir $SRV_DIR/ +workshop_download_item $WORKSHOP_APPID $MOD_ID +quit"
+				STEAMCMDSUCCESSMODS=$?
+				if [[ "$STEAMCMDSUCCESSMODS" == "0" ]]; then
+					echo "Download of mod $MOD_NAME_ID: SUCCEDED!"
+				elif [[ "$STEAMCMDSUCCESSMODS" != "0" ]]; then
+					echo "Download of mod $MOD_NAME_ID: FAILED!"
+					echo "Retrying...."
+				fi
+			done
+			su - $USER -c "ln -s $SRV_DIR/steamapps/workshop/content/$WORKSHOP_APPID/$MOD_ID /home/$USER/server/@$MOD_NAME"
 			echo "$AVAILABLE_VERSION_MOD" > $UPDATE_DIR/mods/$MOD_NAME.mod_version
 		done
 		find -L /home/$USER/server/@* -name "*.bikey" -exec cp {} /home/$USER/server/keys/ \;
