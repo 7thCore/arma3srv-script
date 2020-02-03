@@ -1587,17 +1587,10 @@ script_install() {
 			AVAILABLE_DATE_MOD=$(curl -s https://steamcommunity.com/sharedfiles/filedetails/changelog/$MOD_ID | grep "Update:" | head -n1 | awk -F 'Update: ' '{print $2}' | tr -d '\t' | awk -F '</div>' '{print $1}' | awk -F ' @ ' '{print $1}')
 			AVAILABLE_TIME_MOD=$(curl -s https://steamcommunity.com/sharedfiles/filedetails/changelog/$MOD_ID | grep "Update:" | head -n1 | awk -F 'Update: ' '{print $2}' | tr -d '\t' | awk -F '</div>' '{print $1}' | awk -F ' @ ' '{print $2}')
 			AVAILABLE_VERSION_MOD=$(date --date="$(printf "%s" $AVAILABLE_DATE_MOD)" +"%Y%m%d")$(date --date="$(printf "%s" $AVAILABLE_TIME_MOD)" +"%H%M")
-			while [[ "$STEAMCMDSUCCESSMODS" != "0" ]]; do
-				su - $USER -c "steamcmd +login $STEAMCMDUID $STEAMCMDPSW +force_install_dir $SRV_DIR/ +workshop_download_item $WORKSHOP_APPID $MOD_ID +quit"
-				STEAMCMDSUCCESSMODS=$?
-				if [[ "$STEAMCMDSUCCESSMODS" == "0" ]]; then
-					echo "Download of mod $MOD_NAME_ID: SUCCEDED!"
-				elif [[ "$STEAMCMDSUCCESSMODS" != "0" ]]; then
-					echo "Download of mod $MOD_NAME_ID: FAILED!"
-					echo "Retrying...."
-				fi
-			done
-			su - $USER -c "ln -s $SRV_DIR/steamapps/workshop/content/$WORKSHOP_APPID/$MOD_ID /home/$USER/server/@$MOD_NAME"
+			su - $USER -c <<- EOF
+				steamcmd +login $STEAMCMDUID $STEAMCMDPSW +force_install_dir $SRV_DIR/ +workshop_download_item $WORKSHOP_APPID $MOD_ID +quit
+				ln -s $SRV_DIR/steamapps/workshop/content/$WORKSHOP_APPID/$MOD_ID /home/$USER/server/@$MOD_NAME
+			EOF
 			echo "$AVAILABLE_VERSION_MOD" > $UPDATE_DIR/mods/$MOD_NAME.mod_version
 		done
 		find -L /home/$USER/server/@* -name "*.bikey" -exec cp {} /home/$USER/server/keys/ \;
