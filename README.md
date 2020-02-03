@@ -141,6 +141,7 @@ After the installation finishes you can log in to the newly created user and fin
 | `-deloldbackup` | Delete old backups |
 | `-delete_save` | Delete the server's save game with the option for deleting/keeping the server.cfg file |
 | `-change_branch` | Changes the game branch in use by the server (public,experimental,legacy and so on) |
+| `-install_aliases` | Installs .bashrc aliases for easy access to the server tmux session |
 | `-rebuild_tmux_config` | Reinstalls the tmux configuration file from the script. Usefull if any tmux configuration updates occoured |
 | `-rebuild_services` | Reinstalls the systemd services from the script. Usefull if any service updates occoured |
 | `-disable_services` | Disables all services. The server and the script will not start up on boot anymore |
@@ -156,6 +157,8 @@ After the installation finishes you can log in to the newly created user and fin
 
 -------------------------
 
-**Known issues are:**
+# Known issues:
 
--None at the moment
+| Issue | Resolution |
+| ----- | ---------- |
+| Ubuntu 18.04 LTS Support (Script can't enable services during installation) | This version of Ubuntu has a bug in it's systemd component, meaning the script CAN NOT enable the services required for the game to start up after boot. You will have to do this manually by rebooting the os and logging in with the username you designated at the beginning of the install procedure then execute the script with the `-enable_services` argument. |

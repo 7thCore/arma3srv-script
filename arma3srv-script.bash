@@ -2,7 +2,7 @@
 
 #Arma 3 server script by 7thCore
 #If you do not know what any of these settings are you are better off leaving them alone. One thing might brake the other if you fiddle around with it.
-export VERSION="202001312016"
+export VERSION="202002031533"
 
 #Basics
 export NAME="Arma3Srv" #Name of the tmux session
@@ -97,15 +97,19 @@ CYAN='\033[0;36m'
 LIGHTRED='\033[1;31m'
 NC='\033[0m'
 
-#Deletes old logs
+#Generate log folder structure
 script_logs() {
 	#If there is not a folder for today, create one
 	if [ ! -d "$LOG_DIR" ]; then
 		mkdir -p $LOG_DIR
 	fi
+}
+
+#Deletes old logs
+script_del_logs() {
 	echo "$(date +"%Y-%m-%d %H:%M:%S") [$VERSION] [$NAME] [INFO] (Delete old logs) Deleting old logs: $LOG_DELOLD days old." | tee -a "$LOG_SCRIPT"
 	#Delete old logs
-	find $LOG_DIR/* -mtime +$LOG_DELOLD -exec rm {} \;
+	find $LOG_DIR/* -mtime +$LOG_DELOLD -exec rm -rf {} \;
 	#Delete empty folders
 	#find $LOG_DIR -type d 2> /dev/null -empty -exec rm -rf {} \;
 	find $BCKP_DIR/ -type d -empty -delete
@@ -114,6 +118,7 @@ script_logs() {
 
 #Prints out if the server is running
 script_status() {
+	script_logs
 	if [[ "$(systemctl --user show -p ActiveState --value $SERVICE)" == "inactive" ]]; then
 		echo "$(date +"%Y-%m-%d %H:%M:%S") [$VERSION] [$NAME] [INFO] (Status) Server is not running." | tee -a "$LOG_SCRIPT"
 	elif [[ "$(systemctl --user show -p ActiveState --value $SERVICE)" == "active" ]]; then
@@ -130,6 +135,7 @@ script_status() {
 
 #Disable all script services
 script_disable_services() {
+	script_logs
 	if [[ "$(systemctl --user show -p UnitFileState --value $SERVICE_NAME.service)" == "enabled" ]]; then
 		systemctl --user disable $SERVICE_NAME.service
 	fi
@@ -144,6 +150,7 @@ script_disable_services() {
 
 #Disables all script services, available to the user
 script_disable_services_manual() {
+	script_logs
 	echo "$(date +"%Y-%m-%d %H:%M:%S") [$VERSION] [$NAME] [INFO] (Disable services) WARNING: This will disable all script services. The server will be disabled." | tee -a "$LOG_SCRIPT"
 	read -p "Are you sure you want to disable all services? (y/n): " DISABLE_SCRIPT_SERVICES
 	if [[ "$DISABLE_SCRIPT_SERVICES" =~ ^([yY][eE][sS]|[yY])$ ]]; then
@@ -155,6 +162,7 @@ script_disable_services_manual() {
 
 # Enable script services by reading the configuration file
 script_enable_services() {
+	script_logs
 	if [[ "$(systemctl --user show -p UnitFileState --value $SERVICE_NAME.service)" == "disabled" ]]; then
 		systemctl --user enable $SERVICE_NAME.service
 	fi
@@ -169,6 +177,7 @@ script_enable_services() {
 
 # Enable script services by reading the configuration file, available to the user
 script_enable_services_manual() {
+	script_logs
 	echo "$(date +"%Y-%m-%d %H:%M:%S") [$VERSION] [$NAME] [INFO] (Enable services) This will enable all script services. The server will be enabled." | tee -a "$LOG_SCRIPT"
 	read -p "Are you sure you want to disable all services? (y/n): " ENABLE_SCRIPT_SERVICES
 	if [[ "$ENABLE_SCRIPT_SERVICES" =~ ^([yY][eE][sS]|[yY])$ ]]; then
@@ -180,6 +189,7 @@ script_enable_services_manual() {
 
 #Disables all script services an re-enables them by reading the configuration file
 script_reload_services() {
+	script_logs
 	echo "$(date +"%Y-%m-%d %H:%M:%S") [$VERSION] [$NAME] [INFO] (Reload services) This will reload all script services." | tee -a "$LOG_SCRIPT"
 	read -p "Are you sure you want to reload all services? (y/n): " RELOAD_SCRIPT_SERVICES
 	if [[ "$RELOAD_SCRIPT_SERVICES" =~ ^([yY][eE][sS]|[yY])$ ]]; then
@@ -194,6 +204,7 @@ script_reload_services() {
 
 #Systemd service sends notification if notifications for start enabled
 script_send_notification_start_initialized() {
+	script_logs
 	if [[ "$EMAIL_START" == "1" ]]; then
 		mail -r "$EMAIL_SENDER ($NAME-$USER)" -s "Notification: Server startup" $EMAIL_RECIPIENT <<- EOF
 		Server startup was initiated at $(date +"%d.%m.%Y %H:%M:%S")
@@ -209,6 +220,7 @@ script_send_notification_start_initialized() {
 
 #Systemd service sends notification if notifications for start enabled
 script_send_notification_start_complete() {
+	script_logs
 	if [[ "$EMAIL_START" == "1" ]]; then
 		mail -r "$EMAIL_SENDER ($NAME-$USER)" -s "Notification: Server startup" $EMAIL_RECIPIENT <<- EOF
 		Server startup was completed at $(date +"%d.%m.%Y %H:%M:%S")
@@ -224,6 +236,7 @@ script_send_notification_start_complete() {
 
 #Systemd service sends notification if notifications for stop enabled
 script_send_notification_stop_initialized() {
+	script_logs
 	if [[ "$EMAIL_START" == "1" ]]; then
 		mail -r "$EMAIL_SENDER ($NAME-$USER)" -s "Notification: Server shutdown" $EMAIL_RECIPIENT <<- EOF
 		Server shutdown was initiated at $(date +"%d.%m.%Y %H:%M:%S")
@@ -239,6 +252,7 @@ script_send_notification_stop_initialized() {
 
 #Systemd service sends notification if notifications for stop enabled
 script_send_notification_stop_complete() {
+	script_logs
 	if [[ "$EMAIL_START" == "1" ]]; then
 		mail -r "$EMAIL_SENDER ($NAME-$USER)" -s "Notification: Server shutdown" $EMAIL_RECIPIENT <<- EOF
 		Server shutdown was complete at $(date +"%d.%m.%Y %H:%M:%S")
@@ -254,6 +268,7 @@ script_send_notification_stop_complete() {
 
 #Systemd service sends email if email notifications for crashes enabled
 script_send_notification_crash() {
+	script_logs
 	if [[ "$EMAIL_CRASH" == "1" ]]; then
 		systemctl --user status $SERVICE > $LOG_DIR/service_log.txt
 		zip -j $LOG_DIR/service_logs.zip $LOG_DIR/service_log.txt
@@ -280,6 +295,7 @@ script_send_notification_crash() {
 
 #Start the server
 script_start() {
+	script_logs
 	if [[ "$(systemctl --user show -p ActiveState --value $SERVICE)" == "inactive" ]]; then
 		echo "$(date +"%Y-%m-%d %H:%M:%S") [$VERSION] [$NAME] [INFO] (Start) Server start initialized." | tee -a "$LOG_SCRIPT"
 		systemctl --user start $SERVICE
@@ -321,6 +337,7 @@ script_start() {
 
 #Stop the server
 script_stop() {
+	script_logs
 	if [[ "$(systemctl --user show -p ActiveState --value $SERVICE)" == "inactive" ]]; then
 		echo "$(date +"%Y-%m-%d %H:%M:%S") [$VERSION] [$NAME] [INFO] (Stop) Server is not running." | tee -a "$LOG_SCRIPT"
 		sleep 1
@@ -338,6 +355,7 @@ script_stop() {
 
 #Restart the server
 script_restart() {
+	script_logs
 	if [[ "$(systemctl --user show -p ActiveState --value $SERVICE)" == "inactive" ]]; then
 		echo "$(date +"%Y-%m-%d %H:%M:%S") [$VERSION] [$NAME] [INFO] (Restart) Server is not running. Use -start to start the server." | tee -a "$LOG_SCRIPT"
 	elif [[ "$(systemctl --user show -p ActiveState --value $SERVICE)" == "activating" ]]; then
@@ -356,6 +374,7 @@ script_restart() {
 
 #Deletes old backups
 script_deloldbackup() {
+	script_logs
 	echo "$(date +"%Y-%m-%d %H:%M:%S") [$VERSION] [$NAME] [INFO] (Delete old backup) Deleting old backups: $BCKP_DELOLD days old." | tee -a "$LOG_SCRIPT"
 	# Delete old backups
 	find $BCKP_DIR/* -type f -mtime +$BCKP_DELOLD -exec rm {} \;
@@ -367,6 +386,7 @@ script_deloldbackup() {
 
 #Backs up the server
 script_backup() {
+	script_logs
 	#If there is not a folder for today, create one
 	if [ ! -d "$BCKP_DEST" ]; then
 		mkdir -p $BCKP_DEST
@@ -380,6 +400,7 @@ script_backup() {
 
 #Automaticly backs up the server and deletes old backups
 script_autobackup() {
+	script_logs
 	if [[ "$(systemctl --user show -p ActiveState --value $SERVICE)" != "active" ]]; then
 		echo "$(date +"%Y-%m-%d %H:%M:%S") [$VERSION] [$NAME] [INFO] (Autobackup) Server is not running." | tee -a "$LOG_SCRIPT"
 	elif [[ "$(systemctl --user show -p ActiveState --value $SERVICE)" == "active" ]]; then
@@ -392,6 +413,7 @@ script_autobackup() {
 
 #Delete the savegame from the server
 script_delete_save() {
+	script_logs
 	if [[ "$(systemctl --user show -p ActiveState --value $SERVICE)" != "active" ]] && [[ "$(systemctl --user show -p ActiveState --value $SERVICE)" != "activating" ]] && [[ "$(systemctl --user show -p ActiveState --value $SERVICE)" != "deactivating" ]]; then
 		echo "$(date +"%Y-%m-%d %H:%M:%S") [$VERSION] [$NAME] [INFO] (Delete save) WARNING! This will delete the server's save game." | tee -a "$LOG_SCRIPT"
 		read -p "Are you sure you want to delete the server's save game? (y/n): " DELETE_SERVER_SAVE
@@ -417,6 +439,7 @@ script_delete_save() {
 
 #Change the steam branch of the app
 script_change_branch() {
+	script_logs
 	if [[ "$(systemctl --user show -p ActiveState --value $SERVICE)" != "active" ]] && [[ "$(systemctl --user show -p ActiveState --value $SERVICE)" != "activating" ]] && [[ "$(systemctl --user show -p ActiveState --value $SERVICE)" != "deactivating" ]]; then
 		echo "$(date +"%Y-%m-%d %H:%M:%S") [$VERSION] [$NAME] [INFO] (Change branch) Server branch change initiated. Waiting on user configuration." | tee -a "$LOG_SCRIPT"
 		read -p "Are you sure you want to change the server branch? (y/n): " CHANGE_SERVER_BRANCH
@@ -488,6 +511,7 @@ script_install_mods() {
 
 #Check for updates. If there are updates available, shut down the server, update it and restart it.
 script_update() {
+	script_logs
 	if [[ "$STEAMCMDUID" == "disabled" ]] && [[ "$STEAMCMDPSW" == "disabled" ]]; then
 		while [[ "$STEAMCMDSUCCESS" != "0" ]]; do
 			read -p "Enter your Steam username: " STEAMCMDUID
@@ -590,6 +614,7 @@ script_update() {
 
 #Check for updates of mods. If there are updates available, shut down the server, update it and restart it.
 script_update_mods() {
+	script_logs
 	if [[ "$MODS_ENABLED" == "1" ]]; then
 		if [[ "$STEAMCMDUID" == "disabled" ]] && [[ "$STEAMCMDPSW" == "disabled" ]]; then
 		while [[ "$STEAMCMDSUCCESS" != "0" ]]; do
@@ -681,9 +706,40 @@ script_update_mods() {
 	fi
 }
 
+script_install_alias(){
+	if [ "$EUID" -ne "0" ]; then #Check if script executed as root and asign the username for the installation process, otherwise use the executing user
+		script_logs
+		echo "$(date +"%Y-%m-%d %H:%M:%S") [$VERSION] [$NAME] [INFO] (Install .bashrc aliases) Installation of aliases in .bashrc commencing. Waiting on user configuration." | tee -a "$LOG_SCRIPT"
+		read -p "Are you sure you want to install bash aliases into .bashrc? (y/n): " INSTALL_BASHRC_ALIAS
+		if [[ "$INSTALL_BASHRC_ALIAS" =~ ^([yY][eE][sS]|[yY])$ ]]; then
+			INSTALL_BASHRC_ALIAS_STATE="1"
+		elif [[ "$INSTALL_BASHRC_ALIAS" =~ ^([nN][oO]|[nN])$ ]]; then
+			echo "$(date +"%Y-%m-%d %H:%M:%S") [$VERSION] [$NAME] [INFO] (Install .bashrc aliases) Installation of aliases in .bashrc aborted." | tee -a "$LOG_SCRIPT"
+			INSTALL_BASHRC_ALIAS_STATE="0"
+		fi
+	else
+		INSTALL_BASHRC_ALIAS_STATE="1"
+	fi
+	
+	if [[ "$INSTALL_BASHRC_ALIAS_STATE" == "1" ]]; then
+		cat >> /home/$USER/.bashrc <<- EOF
+			alias $SERVICE_NAME-server='tmux -L $USER-tmux.sock attach -t $NAME'
+		EOF
+	fi
+	
+	if [ "$EUID" -ne "0" ]; then
+		if [[ "$INSTALL_BASHRC_ALIAS_STATE" == "1" ]]; then
+			echo "$(date +"%Y-%m-%d %H:%M:%S") [$VERSION] [$NAME] [INFO] (Install .bashrc aliases) Installation of aliases in .bashrc complete. Re-log for the changes to take effect." | tee -a "$LOG_SCRIPT"
+			echo "Aliases:"
+			echo "$SERVICE_NAME-server = Attaches to the server console."
+		fi
+	fi
+}
+
 #Install or reinstall tmux configuration
 script_install_tmux_config() {
 	if [ "$EUID" -ne "0" ]; then #Check if script executed as root and asign the username for the installation process, otherwise use the executing user
+		script_logs
 		echo "$(date +"%Y-%m-%d %H:%M:%S") [$VERSION] [$NAME] [INFO] (Reinstall tmux configuration) Tmux configuration reinstallation commencing. Waiting on user configuration." | tee -a "$LOG_SCRIPT"
 		read -p "Are you sure you want to reinstall the tmux configuration? (y/n): " REINSTALL_SYSTEMD_SERVICES
 		if [[ "$REINSTALL_SYSTEMD_SERVICES" =~ ^([yY][eE][sS]|[yY])$ ]]; then
@@ -770,7 +826,6 @@ script_install_tmux_config() {
 		bind-key r source-file $SCRIPT_DIR/$SERVICE_NAME-tmux.conf \; display-message "Config reloaded!"
 
 		set-hook -g session-created 'resize-window -y 24 -x 10000'
-		set-hook -g session-created "pipe-pane -o 'tee >> $LOG_TMP'"
 		set-hook -g client-attached 'resize-window -y 24 -x 10000'
 		set-hook -g client-detached 'resize-window -y 24 -x 10000'
 		set-hook -g client-resized 'resize-window -y 24 -x 10000'
@@ -801,6 +856,7 @@ script_install_tmux_config() {
 #Install or reinstall systemd services
 script_install_services() {
 	if [ "$EUID" -ne "0" ]; then #Check if script executed as root and asign the username for the installation process, otherwise use the executing user
+		script_logs
 		echo "$(date +"%Y-%m-%d %H:%M:%S") [$VERSION] [$NAME] [INFO] (Reinstall systemd services) Systemd services reinstallation commencing. Waiting on user configuration." | tee -a "$LOG_SCRIPT"
 		read -p "Are you sure you want to reinstall the systemd services? (y/n): " REINSTALL_SYSTEMD_SERVICES
 		if [[ "$REINSTALL_SYSTEMD_SERVICES" =~ ^([yY][eE][sS]|[yY])$ ]]; then
@@ -954,6 +1010,7 @@ script_install_services() {
 
 #Check github for script updates and update if newer version available
 script_update_github() {
+	script_logs
 	if [[ "$SCRIPT_UPDATES_GITHUB" == "1" ]]; then
 		GITHUB_VERSION=$(curl -s https://raw.githubusercontent.com/7thCore/$SERVICE_NAME-script/master/$SERVICE_NAME-script.bash | grep "^export VERSION=" | sed 's/"//g' | cut -d = -f2)
 		if [ "$GITHUB_VERSION" -gt "$VERSION" ]; then
@@ -994,6 +1051,7 @@ script_update_github() {
 
 #Get latest script from github no matter what the version
 script_update_github_force() {
+	script_logs
 	GITHUB_VERSION=$(curl -s https://raw.githubusercontent.com/7thCore/$SERVICE_NAME-script/master/$SERVICE_NAME-script.bash | grep "^export VERSION=" | sed 's/"//g' | cut -d = -f2)
 	echo "$(date +"%Y-%m-%d %H:%M:%S") [$VERSION] [$NAME] [INFO] (Script update) Forcing script update." | tee -a $LOG_SCRIPT
 	echo "$(date +"%Y-%m-%d %H:%M:%S") [$VERSION] [$NAME] [INFO] (Script update) Installed:$VERSION, Available:$GITHUB_VERSION" | tee -a $LOG_SCRIPT
@@ -1017,8 +1075,7 @@ script_timer_one() {
 		echo "$(date +"%Y-%m-%d %H:%M:%S") [$VERSION] [$NAME] [INFO] (Status) Server is in deactivating. Please wait." | tee -a "$LOG_SCRIPT"
 	elif [[ "$(systemctl --user show -p ActiveState --value $SERVICE)" == "active" ]]; then
 		echo "$(date +"%Y-%m-%d %H:%M:%S") [$VERSION] [$NAME] [INFO] (Status) Server running." | tee -a "$LOG_SCRIPT"
-		script_enabled
-		script_logs
+		script_del_logs
 		script_autobackup
 		if [[ "$STEAMCMDUID" != "disabled" ]] && [[ "$STEAMCMDPSW" != "disabled" ]]; then
 			script_update
@@ -1040,8 +1097,7 @@ script_timer_two() {
 		echo "$(date +"%Y-%m-%d %H:%M:%S") [$VERSION] [$NAME] [INFO] (Status) Server is in deactivating. Please wait." | tee -a "$LOG_SCRIPT"
 	elif [[ "$(systemctl --user show -p ActiveState --value $SERVICE)" == "active" ]]; then
 		echo "$(date +"%Y-%m-%d %H:%M:%S") [$VERSION] [$NAME] [INFO] (Status) Server running." | tee -a "$LOG_SCRIPT"
-		script_enabled
-		script_logs
+		script_del_logs
 		if [[ "$STEAMCMDUID" != "disabled" ]] && [[ "$STEAMCMDPSW" != "disabled" ]]; then
 			script_update
 			script_update_mods
@@ -1071,9 +1127,33 @@ script_install_packages() {
 			#Get codename
 			UBUNTU_CODENAME=$(cat /etc/os-release | grep "^UBUNTU_CODENAME=" | cut -d = -f2)
 			
+			#Add i386 architecture support
+			sudo dpkg --add-architecture i386
+			
+			#Check codename and install config for installation
+			if [[ "$UBUNTU_CODENAME" == "bionic" ]]; then
+				cat > /etc/apt/sources.list <<- EOF
+				#### ubuntu eoan #########
+				deb http://archive.ubuntu.com/ubuntu eoan main restricted universe multiverse
+				EOF
+				
+				cat > /etc/apt/preferences.d/eoan.pref <<- EOF
+				Package: *
+				Pin: release n=$UBUNTU_CODENAME
+				Pin-Priority: 10
+				
+				Package: tmux
+				Pin: release n=eoan
+				Pin-Priority: 900
+				EOF
+			fi
+			
+			#Check for updates and update local repo database
+			sudo apt update
+			
 			#Install packages and enable services
-			sudo apt install --install-recommends steamcmd
-			sudo apt install rsync unzip p7zip wget curl tmux postfix zip jq
+			sudo apt install --install-recommends -y steamcmd
+			sudo apt install -y rsync unzip p7zip wget curl tmux postfix zip jq
 		fi
 		
 		if [[ "$DISTRO" == "arch" ]]; then
@@ -1082,7 +1162,7 @@ script_install_packages() {
 		echo "Package installation complete."
 	else
 		echo "os-release file not found. Is this distro supported?"
-		echo "This script currently supports Arch Linux and Ubuntu 19.10"
+		echo "This script currently supports Arch Linux, Ubutnu 18.04 LTS (see known issues) and Ubuntu 19.10"
 		exit 1
 	fi
 }
@@ -1091,7 +1171,7 @@ script_install() {
 	echo "Installation"
 	echo ""
 	echo "Required packages that need to be installed on the server:"
-	echo "tmux"
+	echo "tmux (minimum version: 2.9a)"
 	echo "steamcmd"
 	echo "postfix (optional/for the email feature)"
 	echo "zip (optional but required if using the email feature)"
@@ -1170,103 +1250,7 @@ script_install() {
 	fi
 	
 	echo ""
-	read -p "Enable mods? (y/n): " MODS_SETUP
-	if [[ "$MODS_SETUP" =~ ^([yY][eE][sS]|[yY])$ ]]; then
-		MODS_INSTALL="1"
-		echo ""
-		read -p "Install Antistasi? (y/n): " MODS_ANTISTASI_SETUP
-		if [[ "$MODS_ANTISTASI_SETUP" =~ ^([yY][eE][sS]|[yY])$ ]]; then
-			MODS_ANTISTASI_INSTALL="1"
-			echo ""
-			echo "Downloading mission files from github. Please wait for mission selection..."
-			sleep 3
-			
-			mkdir "$PWD/mission_pbo"
-			cd "$PWD/mission_pbo"
-			MODS_ANTISTASI_VERSION=$(curl -s "https://api.github.com/repos/official-antistasi-community/A3-Antistasi/releases/latest" | grep '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/')
-			curl -s https://api.github.com/repos/official-antistasi-community/A3-Antistasi/releases/latest | jq -r ".assets[] | select(.name | contains(\"pbo\")) | .browser_download_url" | wget -i -
-			cd ./..
-			
-			prompt="Please select a mission file:" options=( $(find "$PWD/mission_pbo" -maxdepth 1 -name "*.pbo" -exec basename \{} .pbo \;) )
-			PS3="$prompt "
-			select MISSION_PBO in "${options[@]}" "Quit" ; do
-				if (( REPLY == 1 + ${#options[@]} )) ; then
-					exit
-				elif (( REPLY > 0 && REPLY <= ${#options[@]} )) ; then
-					echo "Mission file $MISSION_PBO selected"
-					break
-				else
-					echo "Invalid option. Try again."
-				fi
-			done
-			
-			echo ""
-			read -p "Install an official Antistasi Server Modset? (y/n): " MODS_ANTISTASI_MODSET_INSTALL
-			if [[ "$MODS_ANTISTASI_MODSET_INSTALL" =~ ^([yY][eE][sS]|[yY])$ ]]; then
-				MOD_LIST_INSTALL="ace-463939057,ace_cpr_adv-1104460924,backpack_chest-820924072,cba_a3-450814997"
-				while [[ "$MODS_ANTISTASI_MODSET_INSTALL_SELLECTION" != [1234] ]]; do
-					echo ""
-					echo "These will be installed on top of the vanilla pack, wich is the default."
-					echo "Available Antistasi Modsets:"
-					echo ""
-					echo "1 - Antistasi Official Server Modset - 3CB"
-					echo "2 - Antistasi Official Server Modset - RHS"
-					echo "3 - Antistasi Official Server Modset - WW2 / Armia Krajowa"
-					echo "4 - Antistasi Official Server Modset - Vanilla"
-					read -p "Enter sellection (ENTER ONLY SINGLE SELLECTION! Default is vanilla): " MODS_ANTISTASI_MODSET_INSTALL_SELLECTION
-					if [[ "$MODS_ANTISTASI_MODSET_INSTALL_SELLECTION" == "1" ]]; then
-						MOD_LIST_INSTALL="$MOD_LIST_INSTALL,3cb_baf_equipment-893328083,3cb_baf_units-893346105,3cb_baf_units_ace-1135539579,3cb_baf_units_rhs-1135541175,3cb_baf_vehicles-893349825,3cb_baf_vehicles_rhs_reskins-1515851169,3cb_baf_vehicles_service-1135543967,3cb_baf_weapons-893339590,3cb_baf_weapons_rhs_compat-1515845502,3cb_baf_factions-1673456286,ace_rhs_afrf_compat-773131200,ace_rhs_usaf_compat-773125288,ace_rhs_gref_compat-884966711,rhs_afrf-843425103,rhs_usaf-843577117,rhs_gref-843593391,rksl_attachments-1661066023"
-					elif [[ "$MODS_ANTISTASI_MODSET_INSTALL_SELLECTION" == "2" ]]; then
-						MOD_LIST_INSTALL="$MOD_LIST_INSTALL,ace_rhs_afrf_compat-773131200,ace_rhs_usaf_compat-773125288,ace_rhs_gref_compat-884966711,rhs_afrf-843425103,rhs_usaf-843577117,rhs_gref-843593391"
-					elif [[ "$MODS_ANTISTASI_MODSET_INSTALL_SELLECTION" == "3" ]]; then
-						MOD_LIST_INSTALL="ace_iron_front_compat-773759919,cup_terrains_core-583496184,cup_terrains_maps-583544987"
-					elif [[ "$MODS_ANTISTASI_MODSET_INSTALL_SELLECTION" == "4" ]]; then
-						continue
-					fi
-				done
-				echo ""
-				read -p "Install Task force radio (You need a teamspeak server for this)? (y/n): " MODS_ANTISTASI_TFR_INSTALL
-				if [[ "$MODS_ANTISTASI_TFR_INSTALL" =~ ^([yY][eE][sS]|[yY])$ ]]; then
-					MOD_LIST_INSTALL="$MOD_LIST_INSTALL,task_force_radio-620019431"
-				else
-					MODS_ANTISTASI_TFR_INSTALL="0"
-				fi
-				echo ""
-				read -p "Install Squad radar? (y/n): " MODS_ANTISTASI_SQR_INSTALL
-				if [[ "$MODS_ANTISTASI_TFR_INSTALL" =~ ^([yY][eE][sS]|[yY])$ ]]; then
-					MOD_LIST_INSTALL="$MOD_LIST_INSTALL,squad_radar-1638341685"
-				else
-					MODS_ANTISTASI_SQR_INSTALL="0"
-				fi
-			fi
-		else
-			MODS_ANTISTASI_INSTALL="0"
-			MODS_ANTISTASI_TFR_INSTALL="0"
-			MODS_ANTISTASI_SQR_INSTALL="0"
-			MISSION_PBO="Your mission file name without the .pbo extension"
-			echo ""
-			read -p "Install custom modset? (y/n): " MOD_LIST_CUSTOM
-			if [[ "$MODS_ANTISTASI_MODSET_INSTALL" =~ ^([yY][eE][sS]|[yY])$ ]]; then
-				echo ""
-				read -p "Enter custom mod names (without spaces or caps) and their workshop ids (ex: cba_a3-450814997,ace-463939057): " MOD_LIST_INSTALL
-			else
-				MOD_LIST_INSTALL="0"
-			fi
-		fi
-	else
-		MODS_INSTALL="0"
-		MOD_LIST_INSTALL=""
-		MODS_ANTISTASI_INSTALL="0"
-		MODS_ANTISTASI_TFR_INSTALL="0"
-		MODS_ANTISTASI_SQR_INSTALL="0"
-		MISSION_PBO="Your mission file name without the .pbo extension"
-	fi
-	
-	echo ""
-	echo "WARNING: script updates from github may include malicious code to steal any info the script uses to work, like Steam accound and password."
-	echo "Not saying i'm that kind of person that would do that but:"
-	echo "IF YOU DON'T TRUST ME, LEAVE THIS OFF FOR SECURITY REASONS!"
-	read -p "Enable automatic updates for the script from github? (y/n): " SCRIPT_UPDATE_CONFIG
+	read -p "Enable automatic updates for the script from github? Read warning in readme! (y/n): " SCRIPT_UPDATE_CONFIG
 	SCRIPT_UPDATE_CONFIG=${SCRIPT_UPDATE_CONFIG:=n}
 	if [[ "$SCRIPT_UPDATE_CONFIG" =~ ^([yY][eE][sS]|[yY])$ ]]; then
 		SCRIPT_UPDATE_ENABLED="1"
@@ -1396,6 +1380,99 @@ script_install() {
 		DISCORD_CRASH="0"
 	fi
 	
+	echo ""
+	read -p "Enable mods? (y/n): " MODS_SETUP
+	if [[ "$MODS_SETUP" =~ ^([yY][eE][sS]|[yY])$ ]]; then
+		MODS_INSTALL="1"
+		echo ""
+		read -p "Install Antistasi? (y/n): " MODS_ANTISTASI_SETUP
+		if [[ "$MODS_ANTISTASI_SETUP" =~ ^([yY][eE][sS]|[yY])$ ]]; then
+			MODS_ANTISTASI_INSTALL="1"
+			echo ""
+			echo "Downloading mission files from github. Please wait for mission selection..."
+			sleep 3
+			
+			mkdir "$PWD/mission_pbo"
+			cd "$PWD/mission_pbo"
+			MODS_ANTISTASI_VERSION=$(curl -s "https://api.github.com/repos/official-antistasi-community/A3-Antistasi/releases/latest" | grep '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/')
+			curl -s https://api.github.com/repos/official-antistasi-community/A3-Antistasi/releases/latest | jq -r ".assets[] | select(.name | contains(\"pbo\")) | .browser_download_url" | wget -i -
+			cd ./..
+			
+			prompt="Please select a mission file:" options=( $(find "$PWD/mission_pbo" -maxdepth 1 -name "*.pbo" -exec basename \{} .pbo \;) )
+			PS3="$prompt "
+			select MISSION_PBO in "${options[@]}" "Quit" ; do
+				if (( REPLY == 1 + ${#options[@]} )) ; then
+					exit
+				elif (( REPLY > 0 && REPLY <= ${#options[@]} )) ; then
+					echo "Mission file $MISSION_PBO selected"
+					break
+				else
+					echo "Invalid option. Try again."
+				fi
+			done
+			
+			echo ""
+			read -p "Install an official Antistasi Server Modset? (y/n): " MODS_ANTISTASI_MODSET_INSTALL
+			if [[ "$MODS_ANTISTASI_MODSET_INSTALL" =~ ^([yY][eE][sS]|[yY])$ ]]; then
+				MOD_LIST_INSTALL="ace-463939057,ace_cpr_adv-1104460924,backpack_chest-820924072,cba_a3-450814997"
+				while [[ "$MODS_ANTISTASI_MODSET_INSTALL_SELLECTION" != [1234] ]]; do
+					echo ""
+					echo "These will be installed on top of the vanilla pack, wich is the default."
+					echo "Available Antistasi Modsets:"
+					echo ""
+					echo "1 - Antistasi Official Server Modset - 3CB"
+					echo "2 - Antistasi Official Server Modset - RHS"
+					echo "3 - Antistasi Official Server Modset - WW2 / Armia Krajowa"
+					echo "4 - Antistasi Official Server Modset - Vanilla"
+					read -p "Enter sellection (ENTER ONLY SINGLE SELLECTION! Default is vanilla): " MODS_ANTISTASI_MODSET_INSTALL_SELLECTION
+					if [[ "$MODS_ANTISTASI_MODSET_INSTALL_SELLECTION" == "1" ]]; then
+						MOD_LIST_INSTALL="$MOD_LIST_INSTALL,3cb_baf_equipment-893328083,3cb_baf_units-893346105,3cb_baf_units_ace-1135539579,3cb_baf_units_rhs-1135541175,3cb_baf_vehicles-893349825,3cb_baf_vehicles_rhs_reskins-1515851169,3cb_baf_vehicles_service-1135543967,3cb_baf_weapons-893339590,3cb_baf_weapons_rhs_compat-1515845502,3cb_baf_factions-1673456286,ace_rhs_afrf_compat-773131200,ace_rhs_usaf_compat-773125288,ace_rhs_gref_compat-884966711,rhs_afrf-843425103,rhs_usaf-843577117,rhs_gref-843593391,rksl_attachments-1661066023"
+					elif [[ "$MODS_ANTISTASI_MODSET_INSTALL_SELLECTION" == "2" ]]; then
+						MOD_LIST_INSTALL="$MOD_LIST_INSTALL,ace_rhs_afrf_compat-773131200,ace_rhs_usaf_compat-773125288,ace_rhs_gref_compat-884966711,rhs_afrf-843425103,rhs_usaf-843577117,rhs_gref-843593391"
+					elif [[ "$MODS_ANTISTASI_MODSET_INSTALL_SELLECTION" == "3" ]]; then
+						MOD_LIST_INSTALL="ace_iron_front_compat-773759919,cup_terrains_core-583496184,cup_terrains_maps-583544987"
+					elif [[ "$MODS_ANTISTASI_MODSET_INSTALL_SELLECTION" == "4" ]]; then
+						continue
+					fi
+				done
+				echo ""
+				read -p "Install Task force radio (You need a teamspeak server for this)? (y/n): " MODS_ANTISTASI_TFR_INSTALL
+				if [[ "$MODS_ANTISTASI_TFR_INSTALL" =~ ^([yY][eE][sS]|[yY])$ ]]; then
+					MOD_LIST_INSTALL="$MOD_LIST_INSTALL,task_force_radio-620019431"
+				else
+					MODS_ANTISTASI_TFR_INSTALL="0"
+				fi
+				echo ""
+				read -p "Install Squad radar? (y/n): " MODS_ANTISTASI_SQR_INSTALL
+				if [[ "$MODS_ANTISTASI_TFR_INSTALL" =~ ^([yY][eE][sS]|[yY])$ ]]; then
+					MOD_LIST_INSTALL="$MOD_LIST_INSTALL,squad_radar-1638341685"
+				else
+					MODS_ANTISTASI_SQR_INSTALL="0"
+				fi
+			fi
+		else
+			MODS_ANTISTASI_INSTALL="0"
+			MODS_ANTISTASI_TFR_INSTALL="0"
+			MODS_ANTISTASI_SQR_INSTALL="0"
+			MISSION_PBO="Your mission file name without the .pbo extension"
+			echo ""
+			read -p "Install custom modset? (y/n): " MOD_LIST_CUSTOM
+			if [[ "$MODS_ANTISTASI_MODSET_INSTALL" =~ ^([yY][eE][sS]|[yY])$ ]]; then
+				echo ""
+				read -p "Enter custom mod names (without spaces or caps) and their workshop ids (ex: cba_a3-450814997,ace-463939057): " MOD_LIST_INSTALL
+			else
+				MOD_LIST_INSTALL="0"
+			fi
+		fi
+	else
+		MODS_INSTALL="0"
+		MOD_LIST_INSTALL=""
+		MODS_ANTISTASI_INSTALL="0"
+		MODS_ANTISTASI_TFR_INSTALL="0"
+		MODS_ANTISTASI_SQR_INSTALL="0"
+		MISSION_PBO="Your mission file name without the .pbo extension"
+	fi
+	
 	echo "Enabling linger"
 	sudo mkdir -p /var/lib/systemd/linger/
 	sudo touch /var/lib/systemd/linger/$USER
@@ -1510,10 +1587,17 @@ script_install() {
 			AVAILABLE_DATE_MOD=$(curl -s https://steamcommunity.com/sharedfiles/filedetails/changelog/$MOD_ID | grep "Update:" | head -n1 | awk -F 'Update: ' '{print $2}' | tr -d '\t' | awk -F '</div>' '{print $1}' | awk -F ' @ ' '{print $1}')
 			AVAILABLE_TIME_MOD=$(curl -s https://steamcommunity.com/sharedfiles/filedetails/changelog/$MOD_ID | grep "Update:" | head -n1 | awk -F 'Update: ' '{print $2}' | tr -d '\t' | awk -F '</div>' '{print $1}' | awk -F ' @ ' '{print $2}')
 			AVAILABLE_VERSION_MOD=$(date --date="$(printf "%s" $AVAILABLE_DATE_MOD)" +"%Y%m%d")$(date --date="$(printf "%s" $AVAILABLE_TIME_MOD)" +"%H%M")
-			su - $USER <<- EOF
-				steamcmd +login $STEAMCMDUID $STEAMCMDPSW +force_install_dir $SRV_DIR/ +workshop_download_item $WORKSHOP_APPID $MOD_ID +quit
-				ln -s $SRV_DIR/steamapps/workshop/content/$WORKSHOP_APPID/$MOD_ID /home/$USER/server/@$MOD_NAME
-			EOF
+			while [[ "$STEAMCMDSUCCESSMODS" != "0" ]]; do
+				su - $USER -c "steamcmd +login $STEAMCMDUID $STEAMCMDPSW +force_install_dir $SRV_DIR/ +workshop_download_item $WORKSHOP_APPID $MOD_ID +quit"
+				STEAMCMDSUCCESSMODS=$?
+				if [[ "$STEAMCMDSUCCESSMODS" == "0" ]]; then
+					echo "Download of mod $MOD_NAME_ID: SUCCEDED!"
+				elif [[ "$STEAMCMDSUCCESSMODS" != "0" ]]; then
+					echo "Download of mod $MOD_NAME_ID: FAILED!"
+					echo "Retrying...."
+				fi
+			done
+			su - $USER -c "ln -s $SRV_DIR/steamapps/workshop/content/$WORKSHOP_APPID/$MOD_ID /home/$USER/server/@$MOD_NAME"
 			echo "$AVAILABLE_VERSION_MOD" > $UPDATE_DIR/mods/$MOD_NAME.mod_version
 		done
 		find -L /home/$USER/server/@* -name "*.bikey" -exec cp {} /home/$USER/server/keys/ \;
@@ -1730,6 +1814,7 @@ case "$1" in
 		echo -e "${GREEN}-deloldbackup ${RED}- ${GREEN}Delete old backups${NC}"
 		echo -e "${GREEN}-delete_save ${RED}- ${GREEN}Delete the server's save game with the option for deleting/keeping the server.cfg file${NC}"
 		echo -e "${GREEN}-change_branch ${RED}- ${GREEN}Changes the game branch in use by the server (public,experimental,legacy and so on.${NC}"
+		echo -e "${GREEN}-install_aliases ${RED}- ${GREEN}Installs .bashrc aliases for easy access to the server tmux session${NC}"
 		echo -e "${GREEN}-rebuild_tmux_config ${RED}- ${GREEN}Reinstalls the tmux configuration file from the script. Usefull if any tmux configuration updates occoured${NC}"
 		echo -e "${GREEN}-rebuild_services ${RED}- ${GREEN}Reinstalls the systemd services from the script. Usefull if any service updates occoured${NC}"
 		echo -e "${GREEN}-disable_services ${RED}- ${GREEN}Disables all services. The server and the script will not start up on boot anymore${NC}"
@@ -1811,6 +1896,9 @@ case "$1" in
 	-send_notification_crash)
 		script_send_notification_crash
 		;;
+	-install_aliases)
+		script_install_alias
+		;;
 	-rebuild_tmux_config)
 		script_install_tmux_config
 		;;
@@ -1841,7 +1929,7 @@ case "$1" in
 	echo ""
 	echo "For more detailed information, execute the script with the -help argument"
 	echo ""
-	echo "Usage: $0 {start|stop|restart|backup|autobackup|deloldbackup|delete_save|change_branch|rebuild_tmux_config|rebuild_services|rebuild_prefix|disable_services|enable_services|reload_services|update|update_mods|update_script|update_script_force|status|install|install_packages"
+	echo "Usage: $0 {start|stop|restart|backup|autobackup|deloldbackup|delete_save|change_branch|install_aliases|rebuild_tmux_config|rebuild_services|rebuild_prefix|disable_services|enable_services|reload_services|update|update_mods|update_script|update_script_force|status|install|install_packages"
 	exit 1
 	;;
 esac
