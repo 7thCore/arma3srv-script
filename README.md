@@ -67,10 +67,7 @@ The script can, in theory run on any systemd-enabled distro. So if you are not u
 
 - Steam: A Steam username and password owning the game in question is needed to download all the needed files (workshop items and DLCs) and allow automated updates. If you want for automated updates for the game and mods enabled you are advised to enable Steam 2 factor authentication via email because Steam Guard via phone will ask for the authentication password every time the script runs a function using SteamCMD and will brake certain functions. Your steam credentials will be stored in the script's configuration file. If you are not comfortable with this you can disable auto updates for the game and mods. You will be however required to manually log in to the server and manually update each time an update is released and each time you will be prompted to enter your Steam credentials wich will not be saved on the server.
 
-- Script updates from GitHub: These may include malicious code to steal any info the script uses to work, like Steam and email credentials and discord webhooks.
-Now I'm not saying that I'm that kind of person that would do that but:
-
-**IF YOU DON'T TRUST ME, LEAVE THIS OFF FOR SECURITY REASONS!**
+- Script updates from GitHub: This will enable the script to update itself from github WITHOUT your consent. If you don't trust me, leave this off.
 
 -------------------------
 
