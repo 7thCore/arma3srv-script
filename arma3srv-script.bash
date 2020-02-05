@@ -2,7 +2,7 @@
 
 #Arma 3 server script by 7thCore
 #If you do not know what any of these settings are you are better off leaving them alone. One thing might brake the other if you fiddle around with it.
-export VERSION="202002052004"
+export VERSION="202002052031"
 
 #Basics
 export NAME="Arma3Srv" #Name of the tmux session
@@ -63,6 +63,9 @@ if [ -f "$SCRIPT_DIR/$SERVICE_NAME-config.conf" ] ; then
 
 	#Log configuration
 	LOG_DELOLD=$(cat $SCRIPT_DIR/$SERVICE_NAME-config.conf | grep log_delold= | cut -d = -f2) #Delete old logs.
+
+	#Script updates from github
+	SCRIPT_UPDATES_GITHUB=$(cat $SCRIPT_DIR/$SERVICE_NAME-config.conf | grep script_updates= | cut -d = -f2) #Get configuration for script updates.
 
 	#Mod configuration
 	MODS_ENABLED=$(cat $SCRIPT_DIR/$SERVICE_NAME-config.conf | grep mods_enabled= | cut -d = -f2) #Are mods enabled?
