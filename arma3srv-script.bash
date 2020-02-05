@@ -2,7 +2,7 @@
 
 #Arma 3 server script by 7thCore
 #If you do not know what any of these settings are you are better off leaving them alone. One thing might brake the other if you fiddle around with it.
-export VERSION="202002050015"
+export VERSION="202002052004"
 
 #Basics
 export NAME="Arma3Srv" #Name of the tmux session
@@ -16,7 +16,7 @@ else
 	elif [[ "-install_packages" == "$1" ]]; then
 		echo "Commencing installation of required packages."
 	elif [[ "-help" == "$1" ]]; then
-		echo ""
+		echo "Displaying help message"
 	else
 		echo "Error: This script, once installed, is meant to be used by the user it created and should not under any circumstances be used with sudo or by the root user for the $1 function. Only -install and -install_packages work with sudo/root. Log in to your created user (default: arma) with sudo -i -u arma and execute your script without root from the coresponding scripts folder."
 		exit 1
@@ -918,7 +918,6 @@ script_install_services() {
 		ExecStop=$SCRIPT_DIR/$SCRIPT_NAME -send_notification_stop_initialized
 		ExecStop=/usr/bin/tmux -f $SCRIPT_DIR/$SERVICE_NAME-tmux.conf -L %u-tmux.sock send-keys -t $NAME.0 C-c
 		ExecStop=/usr/bin/sleep 10
-		ExecStop=/usr/bin/rm $LOG_TMP
 		ExecStopPost=$SCRIPT_DIR/$SCRIPT_NAME -send_notification_stop_complete
 		TimeoutStartSec=infinity
 		TimeoutStopSec=120
