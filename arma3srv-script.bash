@@ -2,7 +2,7 @@
 
 #Arma 3 server script by 7thCore
 #If you do not know what any of these settings are you are better off leaving them alone. One thing might brake the other if you fiddle around with it.
-export VERSION="202002052031"
+export VERSION="202002131239"
 
 #Basics
 export NAME="Arma3Srv" #Name of the tmux session
@@ -650,11 +650,14 @@ script_update_mods() {
 			AVAILABLE_TIME_MOD=$(curl -s https://steamcommunity.com/sharedfiles/filedetails/changelog/$MOD_ID | grep "Update:" | head -n1 |awk -F 'Update: ' '{print $2}' | tr -d '\t' | awk -F '</div>' '{print $1}' | awk -F ' @ ' '{print $2}')
 			AVAILABLE_VERSION_MOD=$(date --date="$(printf "%s" $AVAILABLE_DATE_MOD)" +"%Y%m%d")$(date --date="$(printf "%s" $AVAILABLE_TIME_MOD)" +"%H%M")
 			INSTALLED_VERSION_MOD=$(cat $UPDATE_DIR/mods/$MOD_NAME.mod_version)
+			if [[ ! "$INSTALLED_VERSION_MOD" ]]; then
+				INSTALLED_VERSION_MOD="0"
+			fi
 			if [ "$AVAILABLE_VERSION_MOD" -gt "$INSTALLED_VERSION_MOD" ]; then
 				MODS_TO_UPDATE="$MODS_TO_UPDATE$MOD_NAME_ID,"
 			fi
 		done
-		if [ ! -z $MODS_TO_UPDATE ]; then
+		if [ ! -z "$MODS_TO_UPDATE" ]; then
 			echo "$(date +"%Y-%m-%d %H:%M:%S") [$VERSION] [$NAME] [INFO] (Mod Update) New mod updates detected. Installing updates." | tee -a "$LOG_SCRIPT"
 			if [[ "$DISCORD_UPDATE_MOD" == "1" ]]; then
 				while IFS="" read -r DISCORD_WEBHOOK || [ -n "$DISCORD_WEBHOOK" ]; do

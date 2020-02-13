@@ -1,3 +1,9 @@
+Update 2020-02-13
+
+- fixed -update_mods breaking when mod_version files are deleted or missing
+
+-------------------------
+
 Update 2020-02-05
 
 - fixed -help asking for username and thinking it's in installation mode
