@@ -2,7 +2,7 @@
 
 #Arma 3 server script by 7thCore
 #If you do not know what any of these settings are you are better off leaving them alone. One thing might brake the other if you fiddle around with it.
-export VERSION="202002131239"
+export VERSION="202002132143"
 
 #Basics
 export NAME="Arma3Srv" #Name of the tmux session
@@ -684,11 +684,11 @@ script_update_mods() {
 				echo "$(date +"%Y-%m-%d %H:%M:%S") [$VERSION] [$NAME] [INFO] (Mod Update) Available: $AVAILABLE_VERSION_MOD" | tee -a "$LOG_SCRIPT"
 				steamcmd +login $STEAMCMDUID $STEAMCMDPSW +force_install_dir $SRV_DIR/ +workshop_download_item $WORKSHOP_APPID $MOD_ID +quit
 				ln -s /home/$USER/server/steamapps/workshop/content/$WORKSHOP_APPID/$MOD_ID /home/$USER/server/@$MOD_NAME
-				if [ -f "/home/$USER/server/steamapps/workshop/content/$WORKSHOP_APPID/$MOD_ID/keys/*.bikey" ]; then
-					cp -rf /home/$USER/server/steamapps/workshop/content/$WORKSHOP_APPID/$MOD_ID/keys/*.bikey /home/$USER/server/keys/
+				if [ -f "/home/$USER/server/steamapps/workshop/content/$WORKSHOP_APPID/keys/*.bikey" ]; then
+					cp -rf /home/$USER/server/steamapps/workshop/content/$WORKSHOP_APPID/keys/*.bikey /home/$USER/server/keys/
 				fi
-				if [ -f "/home/$USER/server/steamapps/workshop/content/$WORKSHOP_APPID/$MOD_ID/key/*.bikey" ]; then
-					cp -rf /home/$USER/server/steamapps/workshop/content/$WORKSHOP_APPID/$MOD_ID/key/*.bikey /home/$USER/server/keys/
+				if [ -f "/home/$USER/server/steamapps/workshop/content/$WORKSHOP_APPID/key/*.bikey" ]; then
+					cp -rf /home/$USER/server/steamapps/workshop/content/$WORKSHOP_APPID/key/*.bikey /home/$USER/server/keys/
 				fi
 				echo "$AVAILABLE_VERSION_MOD" > $UPDATE_DIR/mods/$MOD_NAME.mod_version
 				echo "$(date +"%Y-%m-%d %H:%M:%S") [$VERSION] [$NAME] [INFO] (Mod Update) Update for mod $MOD_NAME complete." | tee -a "$LOG_SCRIPT"
