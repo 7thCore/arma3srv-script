@@ -2,7 +2,7 @@
 
 #Arma 3 server script by 7thCore
 #If you do not know what any of these settings are you are better off leaving them alone. One thing might brake the other if you fiddle around with it.
-export VERSION="202002132143"
+export VERSION="202002271217"
 
 #Basics
 export NAME="Arma3Srv" #Name of the tmux session
@@ -141,6 +141,10 @@ script_status() {
 	fi
 }
 
+#Attaches to the server tmux session
+script_attach() {
+	tmux -L $USER-tmux.sock attach -t $NAME
+}
 
 #Disable all script services
 script_disable_services() {
@@ -735,7 +739,7 @@ script_install_alias(){
 	
 	if [[ "$INSTALL_BASHRC_ALIAS_STATE" == "1" ]]; then
 		cat >> /home/$USER/.bashrc <<- EOF
-			alias $SERVICE_NAME-server='tmux -L $USER-tmux.sock attach -t $NAME'
+			alias $SERVICE_NAME="/home/$USER/scripts/$SERVICE_NAME-script.bash"
 		EOF
 	fi
 	
@@ -1138,33 +1142,39 @@ script_install_packages() {
 			#Get codename
 			UBUNTU_CODENAME=$(cat /etc/os-release | grep "^UBUNTU_CODENAME=" | cut -d = -f2)
 			
-			#Add i386 architecture support
-			sudo dpkg --add-architecture i386
-			
-			#Check codename and install config for installation
-			if [[ "$UBUNTU_CODENAME" == "bionic" ]]; then
-				cat > /etc/apt/sources.list <<- EOF
-				#### ubuntu eoan #########
-				deb http://archive.ubuntu.com/ubuntu eoan main restricted universe multiverse
-				EOF
+			if [[ "$UBUNTU_CODENAME" == "bionic" || "$UBUNTU_CODENAME" == "eoan" ]]; then
+				#Add i386 architecture support
+				sudo dpkg --add-architecture i386
 				
-				cat > /etc/apt/preferences.d/eoan.pref <<- EOF
-				Package: *
-				Pin: release n=$UBUNTU_CODENAME
-				Pin-Priority: 10
+				#Check codename and install config for installation
+				if [[ "$UBUNTU_CODENAME" == "bionic" ]]; then
+					cat >> /etc/apt/sources.list <<- EOF
+					#### ubuntu eoan #########
+					deb http://archive.ubuntu.com/ubuntu eoan main restricted universe multiverse
+					EOF
+					
+					cat > /etc/apt/preferences.d/eoan.pref <<- EOF
+					Package: *
+					Pin: release n=$UBUNTU_CODENAME
+					Pin-Priority: 10
+					
+					Package: tmux
+					Pin: release n=eoan
+					Pin-Priority: 900
+					EOF
+				fi
 				
-				Package: tmux
-				Pin: release n=eoan
-				Pin-Priority: 900
-				EOF
+				#Check for updates and update local repo database
+				sudo apt update
+				
+				#Install packages and enable services
+				sudo apt install --install-recommends -y steamcmd
+				sudo apt install -y rsync unzip p7zip wget curl tmux postfix zip jq
+			else
+				echo "Error: This version of Ubuntu is not supported. Supported versions are: Ubuntu 18.04 LTS (Bionic Beaver), Ubuntu 19.10 (Disco Dingo)"
+				echo "Exiting"
+				exit 1
 			fi
-			
-			#Check for updates and update local repo database
-			sudo apt update
-			
-			#Install packages and enable services
-			sudo apt install --install-recommends -y steamcmd
-			sudo apt install -y rsync unzip p7zip wget curl tmux postfix zip jq
 		fi
 		
 		if [[ "$DISTRO" == "arch" ]]; then
@@ -1217,6 +1227,8 @@ script_install() {
 	echo ""
 	sudo useradd -m -g users -s /bin/bash $USER
 	echo -en "$USER_PASS\n$USER_PASS\n" | sudo passwd $USER
+	
+	sudo chown -R "$USER":users "/home/$USER"
 	
 	echo ""
 	echo "You will now have to enter your Steam credentials. Exepct a prompt for a Steam guard code if you have it enabled."
@@ -1775,7 +1787,7 @@ volumeSpeech=10;
 volumeVoN=10;
 EOF
 	
-	chown -R $USER:users "/home/$USER/"
+	sudo chown -R "$USER":users "/home/$USER"
 	
 	echo "Installation complete"
 	echo ""
@@ -1880,6 +1892,9 @@ case "$1" in
 	-status)
 		script_status
 		;;
+	-attach)
+		script_attach
+		;;
 	-install_packages)
 		script_install_packages
 		;;
@@ -1940,7 +1955,7 @@ case "$1" in
 	echo ""
 	echo "For more detailed information, execute the script with the -help argument"
 	echo ""
-	echo "Usage: $0 {start|stop|restart|backup|autobackup|deloldbackup|delete_save|change_branch|install_aliases|rebuild_tmux_config|rebuild_services|rebuild_prefix|disable_services|enable_services|reload_services|update|update_mods|update_script|update_script_force|status|install|install_packages"
+	echo "Usage: $0 {start|stop|restart|backup|autobackup|deloldbackup|delete_save|change_branch|install_aliases|rebuild_tmux_config|rebuild_services|rebuild_prefix|disable_services|enable_services|reload_services|update|update_mods|update_script|update_script_force|attach|status|install|install_packages"
 	exit 1
 	;;
 esac
