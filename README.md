@@ -59,13 +59,13 @@ This script creates a new non-sudo enabled user and installes the game in a fold
 
 I will add suport for the next Ubuntu LTS version when it's released.
 
-The script can, in theory run on any systemd-enabled distro. So if you are not using Arch Linux or Ubuntu 19.10 I suggest you check your distro's wiki on how to install the required packages. The script can, in theory install packages for any Ubuntu version, but the repositories for old versions of Ubuntu might have outdated packages and cause problems.
+The script can, in theory run on any systemd-enabled distro. So if you are not using any of the above listed distros I suggest you check your distro's wiki on how to install the required packages. The script can, in theory install packages for any Ubuntu version, but the repositories for old versions of Ubuntu might have outdated packages and cause problems.
 
 -------------------------
 
 # WARNING
 
-- Steam: A Steam username and password owning the game in question is needed to download all the needed files (workshop items and DLCs) and allow automated updates. If you want for automated updates for the game and mods enabled you are advised to enable Steam 2 factor authentication via email because Steam Guard via phone will ask for the authentication password every time the script runs a function using SteamCMD and will brake certain functions. Your steam credentials will be stored in the script's configuration file. If you are not comfortable with this you can disable auto updates for the game and mods. You will be however required to manually log in to the server and manually update each time an update is released and each time you will be prompted to enter your Steam credentials wich will not be saved on the server.
+- Steam: A Steam username and password owning the game in question is needed to download all the needed files (workshop items and DLCs) and allow automated updates. If you want for automated updates for the game and mods enabled you are advised to enable Steam 2 factor authentication via email because Steam Guard via phone will ask for the authentication password every time the script runs a function using SteamCMD and will break certain functions. Your steam credentials will be stored in the script's configuration file. If you are not comfortable with this you can disable auto updates for the game and mods. You will be however required to manually log in to the server and manually update each time an update is released and each time you will be prompted to enter your Steam credentials wich will not be saved on the server.
 
 - Script updates from GitHub: This will enable the script to update itself from github WITHOUT your consent. If you don't trust me, leave this off.
 
