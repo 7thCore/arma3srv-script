@@ -111,7 +111,7 @@ Sometime between the installation process you will be prompted for steam's two f
 
 **Installation:**
 
-If you wish you can have the script install the required packages with (Only for Arch Linux & Ubuntu 19.10):
+If you wish you can have the script install the required packages with (only for supported distros):
 
 `sudo ./arma3srv-script.bash -install_packages`
 
