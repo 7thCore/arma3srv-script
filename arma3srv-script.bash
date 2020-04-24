@@ -2,7 +2,7 @@
 
 #Arma 3 server script by 7thCore
 #If you do not know what any of these settings are you are better off leaving them alone. One thing might brake the other if you fiddle around with it.
-export VERSION="202004101342"
+export VERSION="202004242125"
 
 #Basics
 export NAME="Arma3Srv" #Name of the tmux session
@@ -63,6 +63,9 @@ if [ -f "$SCRIPT_DIR/$SERVICE_NAME-config.conf" ] ; then
 
 	#Log configuration
 	LOG_DELOLD=$(cat $SCRIPT_DIR/$SERVICE_NAME-config.conf | grep log_delold= | cut -d = -f2) #Delete old logs.
+
+	#Ignore failed startups during update configuration
+	UPDATE_IGNORE_FAILED_ACTIVATIONS=$(cat $SCRIPT_DIR/$SERVICE_NAME-config.conf | grep update_ignore_failed_startups= | cut -d = -f2)
 
 	#Script updates from github
 	SCRIPT_UPDATES_GITHUB=$(cat $SCRIPT_DIR/$SERVICE_NAME-config.conf | grep script_updates= | cut -d = -f2) #Get configuration for script updates.
@@ -328,7 +331,7 @@ script_start() {
 		echo "$(date +"%Y-%m-%d %H:%M:%S") [$VERSION] [$NAME] [INFO] (Start) Server is already running." | tee -a "$LOG_SCRIPT"
 		sleep 1
 	elif [[ "$(systemctl --user show -p ActiveState --value $SERVICE)" == "failed" ]]; then
-		echo "$(date +"%Y-%m-%d %H:%M:%S") [$VERSION] [$NAME] [INFO] (Start) Server failed to activate. See systemctl --user status $SERVICE for details." | tee -a "$LOG_SCRIPT"
+		echo "$(date +"%Y-%m-%d %H:%M:%S") [$VERSION] [$NAME] [INFO] (Start) Server is in failed state. See systemctl --user status $SERVICE for details." | tee -a "$LOG_SCRIPT"
 		read -p "Do you still want to start the server? (y/n): " FORCE_START
 		if [[ "$FORCE_START" =~ ^([yY][eE][sS]|[yY])$ ]]; then
 			systemctl --user start $SERVICE
@@ -344,6 +347,45 @@ script_start() {
 				echo "$(date +"%Y-%m-%d %H:%M:%S") [$VERSION] [$NAME] [INFO] (Start) Server failed to activate. See systemctl --user status $SERVICE for details." | tee -a "$LOG_SCRIPT"
 				sleep 1
 			fi
+		fi
+	fi
+}
+
+#Start the server ignorring failed states
+script_start_ignore_errors() {
+	script_logs
+	if [[ "$(systemctl --user show -p ActiveState --value $SERVICE)" == "inactive" ]]; then
+		echo "$(date +"%Y-%m-%d %H:%M:%S") [$VERSION] [$NAME] [INFO] (Start) Server start initialized." | tee -a "$LOG_SCRIPT"
+		systemctl --user start $SERVICE
+		sleep 1
+		while [[ "$(systemctl --user show -p ActiveState --value $SERVICE)" == "activating" ]]; do
+			echo "$(date +"%Y-%m-%d %H:%M:%S") [$VERSION] [$NAME] [INFO] (Start) Server is activating. Please wait..." | tee -a "$LOG_SCRIPT"
+			sleep 1
+		done
+		if [[ "$(systemctl --user show -p ActiveState --value $SERVICE)" == "active" ]]; then
+			echo "$(date +"%Y-%m-%d %H:%M:%S") [$VERSION] [$NAME] [INFO] (Start) Server has been successfully activated." | tee -a "$LOG_SCRIPT"
+			sleep 1
+		elif [[ "$(systemctl --user show -p ActiveState --value $SERVICE)" == "failed" ]]; then
+			echo "$(date +"%Y-%m-%d %H:%M:%S") [$VERSION] [$NAME] [INFO] (Start) Server failed to activate. See systemctl --user status $SERVICE for details." | tee -a "$LOG_SCRIPT"
+			sleep 1
+		fi
+	elif [[ "$(systemctl --user show -p ActiveState --value $SERVICE)" == "active" ]]; then
+		echo "$(date +"%Y-%m-%d %H:%M:%S") [$VERSION] [$NAME] [INFO] (Start) Server is already running." | tee -a "$LOG_SCRIPT"
+		sleep 1
+	elif [[ "$(systemctl --user show -p ActiveState --value $SERVICE)" == "failed" ]]; then
+		echo "$(date +"%Y-%m-%d %H:%M:%S") [$VERSION] [$NAME] [INFO] (Start) Server is in failed state. See systemctl --user status $SERVICE for details." | tee -a "$LOG_SCRIPT"
+		systemctl --user start $SERVICE
+		sleep 1
+		while [[ "$(systemctl --user show -p ActiveState --value $SERVICE)" == "activating" ]]; do
+			echo "$(date +"%Y-%m-%d %H:%M:%S") [$VERSION] [$NAME] [INFO] (Start) Server is activating. Please wait..." | tee -a "$LOG_SCRIPT"
+			sleep 1
+		done
+		if [[ "$(systemctl --user show -p ActiveState --value $SERVICE)" == "active" ]]; then
+			echo "$(date +"%Y-%m-%d %H:%M:%S") [$VERSION] [$NAME] [INFO] (Start) Server has been successfully activated." | tee -a "$LOG_SCRIPT"
+			sleep 1
+		elif [[ "$(systemctl --user show -p ActiveState --value $SERVICE)" == "failed" ]]; then
+			echo "$(date +"%Y-%m-%d %H:%M:%S") [$VERSION] [$NAME] [INFO] (Start) Server failed to activate. See systemctl --user status $SERVICE for details." | tee -a "$LOG_SCRIPT"
+			sleep 1
 		fi
 	fi
 }
@@ -605,6 +647,11 @@ script_update() {
 		
 		if [ "$WAS_ACTIVE" == "1" ]; then
 			sleep 1
+			if [[ "$UPDATE_IGNORE_FAILED_ACTIVATIONS" == "1" ]]; then
+				script_start_ignore_errors
+			else
+				script_start
+			fi
 			script_start
 		fi
 		
@@ -700,7 +747,11 @@ script_update_mods() {
 			
 			if [ "$WAS_ACTIVE" == "1" ]; then
 				sleep 1
-				script_start
+				if [[ "$UPDATE_IGNORE_FAILED_ACTIVATIONS" == "1" ]]; then
+					script_start_ignore_errors
+				else
+					script_start
+				fi
 			fi
 			
 			if [[ "$EMAIL_UPDATE_MOD" == "1" ]]; then
@@ -718,6 +769,57 @@ script_update_mods() {
 			echo "$(date +"%Y-%m-%d %H:%M:%S") [$VERSION] [$NAME] [INFO] (Mod Update) Update for all mods complete." | tee -a "$LOG_SCRIPT"
 		else
 			echo "$(date +"%Y-%m-%d %H:%M:%S") [$VERSION] [$NAME] [INFO] (Mod Update) All mods are up to date." | tee -a "$LOG_SCRIPT"
+		fi
+	fi
+}
+
+#Shutdown any active servers, check the integrity of the server files and restart the servers.
+script_verify_game_integrity() {
+	script_logs
+	if [[ "$STEAMCMDUID" == "disabled" ]] && [[ "$STEAMCMDPSW" == "disabled" ]]; then
+		while [[ "$STEAMCMDSUCCESS" != "0" ]]; do
+			read -p "Enter your Steam username: " STEAMCMDUID
+			echo ""
+			read -p "Enter your Steam password: " STEAMCMDPSW
+			steamcmd +login $STEAMCMDUID $STEAMCMDPSW +quit
+			STEAMCMDSUCCESS=$?
+			if [[ "$STEAMCMDSUCCESS" == "0" ]]; then
+				echo "Steam login for $STEAMCMDUID: SUCCEDED!"
+			elif [[ "$STEAMCMDSUCCESS" != "0" ]]; then
+				echo "Steam login for $STEAMCMDUID: FAILED!"
+				echo "Please try again."
+			fi
+		done
+	fi
+	echo "$(date +"%Y-%m-%d %H:%M:%S") [$VERSION] [$NAME] [INFO] (Integrity check) Initializing integrity check." | tee -a "$LOG_SCRIPT"
+	if [[ "$BETA_BRANCH_ENABLED" == "1" ]]; then
+		echo "$(date +"%Y-%m-%d %H:%M:%S") [$VERSION] [$NAME] [INFO] (Integrity check) Beta branch enabled. Branch name: $BETA_BRANCH_NAME" | tee -a "$LOG_SCRIPT"
+	fi
+	
+	echo "$(date +"%Y-%m-%d %H:%M:%S") [$VERSION] [$NAME] [INFO] (Integrity check) Removing Steam/appcache/appinfo.vdf" | tee -a "$LOG_SCRIPT"
+	rm -rf "/home/$USER/.steam/appcache/appinfo.vdf"
+	
+	if [[ "$(systemctl --user show -p ActiveState --value $SERVICE)" == "active" ]]; then
+		sleep 1
+		WAS_ACTIVE="1"
+		script_stop
+		sleep 1
+	fi
+	
+	if [[ "$BETA_BRANCH_ENABLED" == "0" ]]; then
+		steamcmd +login $STEAMCMDUID $STEAMCMDPSW +force_install_dir $SRV_DIR/ +app_update $APPID validate +quit
+	elif [[ "$BETA_BRANCH_ENABLED" == "1" ]]; then
+		steamcmd +login $STEAMCMDUID $STEAMCMDPSW +force_install_dir $SRV_DIR/ +app_update $APPID -beta $BETA_BRANCH_NAME validate +quit
+	fi
+	
+	echo "$(date +"%Y-%m-%d %H:%M:%S") [$VERSION] [$NAME] [INFO] (Integrity check) Integrity check completed." | tee -a "$LOG_SCRIPT"
+	
+	if [ "$WAS_ACTIVE" == "1" ]; then
+		sleep 1
+		if [[ "$UPDATE_IGNORE_FAILED_ACTIVATIONS" == "1" ]]; then
+			script_start_ignore_errors
+		else
+			script_start
 		fi
 	fi
 }
@@ -1121,6 +1223,116 @@ script_timer_two() {
 	fi
 }
 
+script_diagnostics() {
+	echo "Initializing diagnostics. Please wait..."
+	sleep 3
+	
+	#Check package versions
+	echo "wine version: $(wine --version)"
+	echo "winetricks version: $(winetricks --version)"
+	echo "tmux version: $(tmux -V)"
+	echo "rsync version: $(rsync --version | head -n 1)"
+	echo "curl version: $(curl --version | head -n 1)"
+	echo "wget version: $(wget --version | head -n 1)"
+	echo "cabextract version: $(cabextract --version)"
+	echo "postfix version: $(postconf mail_version)"
+	
+	#Get distro name
+	DISTRO=$(cat /etc/os-release | grep "^ID=" | cut -d = -f2)
+	
+	#Check package versions
+	if [[ "$DISTRO" == "arch" ]]; then
+		echo "xvfb version:$(pacman -Qi xorg-server-xvfb | grep "^Version" | cut -d : -f2)"
+		echo "postfix version:$(pacman -Qi postfix | grep "^Version" | cut -d : -f2)"
+		echo "zip version:$(pacman -Qi zip | grep "^Version" | cut -d : -f2)"
+	elif [[ "$DISTRO" == "ubuntu" ]]; then
+		echo "xvfb version:$(dpkg -s xvfb | grep "^Version" | cut -d : -f2)"
+		echo "postfix version:$(dpkg -s postfix | grep "^Version" | cut -d : -f2)"
+		echo "zip version:$(dpkg -s zip | grep "^Version" | cut -d : -f2)"
+	fi
+	
+	#Check if files/folders present
+	if [ -f "$SCRIPT_DIR/$SCRIPT_NAME" ] ; then
+		echo "Script installed: Yes"
+	else
+		echo "Script installed: No"
+	fi
+	
+	if [ -f "$SCRIPT_DIR/$SERVICE_NAME-config.conf" ] ; then
+		echo "Configuration file present: Yes"
+	else
+		echo "Configuration file present: No"
+	fi
+	
+	if [ -d "/home/$USER/backups" ]; then
+		echo "Backups folder present: Yes"
+	else
+		echo "Backups folder present: No"
+	fi
+	
+	if [ -d "/home/$USER/logs" ]; then
+		echo "Logs folder present: Yes"
+	else
+		echo "Logs folder present: No"
+	fi
+	
+	if [ -d "/home/$USER/scripts" ]; then
+		echo "Scripts folder present: Yes"
+	else
+		echo "Scripts folder present: No"
+	fi
+	
+	if [ -d "/home/$USER/server" ]; then
+		echo "Server folder present: Yes"
+	else
+		echo "Server folder present: No"
+	fi
+	
+	if [ -d "/home/$USER/updates" ]; then
+		echo "Updates folder present: Yes"
+	else
+		echo "Updates folder present: No"
+	fi
+	
+	if [ -f "/home/$USER/.config/systemd/user/$SERVICE_NAME.service" ]; then
+		echo "Basic service present: Yes"
+	else
+		echo "Basic service present: No"
+	fi
+	
+	if [ -f "/home/$USER/.config/systemd/user/$SERVICE_NAME-timer-1.timer" ]; then
+		echo "Timer 1 timer present: Yes"
+	else
+		echo "Timer 1 timer present: No"
+	fi
+	
+	if [ -f "/home/$USER/.config/systemd/user/$SERVICE_NAME-timer-1.service" ]; then
+		echo "Timer 1 service present: Yes"
+	else
+		echo "Timer 1 service present: No"
+	fi
+	
+	if [ -f "/home/$USER/.config/systemd/user/$SERVICE_NAME-timer-2.timer" ]; then
+		echo "Timer 2 timer present: Yes"
+	else
+		echo "Timer 2 timer present: No"
+	fi
+	
+	if [ -f "/home/$USER/.config/systemd/user/$SERVICE_NAME-timer-2.service" ]; then
+		echo "Timer 2 service present: Yes"
+	else
+		echo "Timer 2 service present: No"
+	fi
+	
+	if [ -f "/home/$USER/.config/systemd/user/$SERVICE_NAME-send-notification.service" ]; then
+		echo "Notification sending service present: Yes"
+	else
+		echo "Notification sending service present: No"
+	fi
+	
+	echo "Diagnostics complete."
+}
+
 script_install_packages() {
 	if [ -f "/etc/os-release" ]; then
 		#Get distro name
@@ -1142,7 +1354,7 @@ script_install_packages() {
 			#Get codename
 			UBUNTU_CODENAME=$(cat /etc/os-release | grep "^UBUNTU_CODENAME=" | cut -d = -f2)
 			
-			if [[ "$UBUNTU_CODENAME" == "bionic" || "$UBUNTU_CODENAME" == "eoan" ]]; then
+			if [[ "$UBUNTU_CODENAME" == "bionic" || "$UBUNTU_CODENAME" == "eoan" || "$UBUNTU_CODENAME" == "focal" ]]; then
 				#Add i386 architecture support
 				sudo dpkg --add-architecture i386
 				
@@ -1168,10 +1380,10 @@ script_install_packages() {
 				sudo apt update
 				
 				#Install packages and enable services
-				sudo apt install --install-recommends -y steamcmd
-				sudo apt install -y rsync unzip p7zip wget curl tmux postfix zip jq
+				sudo apt install --yes --install-recommends -y steamcmd
+				sudo apt install --yes rsync unzip p7zip wget curl tmux postfix zip jq
 			else
-				echo "Error: This version of Ubuntu is not supported. Supported versions are: Ubuntu 18.04 LTS (Bionic Beaver), Ubuntu 19.10 (Disco Dingo)"
+				echo "Error: This version of Ubuntu is not supported. Supported versions are: Ubuntu 18.04 LTS (Bionic Beaver), Ubuntu 19.10 (Disco Dingo), Ubuntu 20.04 LTS (Focal Fossa)"
 				echo "Exiting"
 				exit 1
 			fi
@@ -1183,7 +1395,7 @@ script_install_packages() {
 		echo "Package installation complete."
 	else
 		echo "os-release file not found. Is this distro supported?"
-		echo "This script currently supports Arch Linux,  Ubuntu 18.04 LTS (Bionic Beaver), Ubuntu 19.10 (Disco Dingo)"
+		echo "This script currently supports Arch Linux,  Ubuntu 18.04 LTS (Bionic Beaver), Ubuntu 19.10 (Disco Dingo), Ubuntu 20.04 LTS (Focal Fossa)"
 		exit 1
 	fi
 }
@@ -1839,7 +2051,7 @@ if [[ "-send_notification_start_initialized" != "$1" ]] && [[ "-send_notificatio
 fi
 
 if [ "$EUID" -ne "0" ] && [ -f "$SCRIPT_DIR/$SERVICE_NAME-config.conf" ]; then #Check if script executed as root, if not generate missing config fields
-	CONFIG_FIELDS="username,password,tmpfs_enable,beta_branch_enabled,beta_branch_name,email_sender,email_recipient,email_update,email_update_script,email_update_mod,email_start,email_stop,email_crash,discord_update,discord_update_script,discord_update_mod,discord_start,discord_stop,discord_crash,mods_enabled,mod_list,script_updates,bckp_delold,log_delold"
+	CONFIG_FIELDS="username,password,tmpfs_enable,beta_branch_enabled,beta_branch_name,email_sender,email_recipient,email_update,email_update_script,email_update_mod,email_start,email_stop,email_crash,discord_update,discord_update_script,discord_update_mod,discord_start,discord_stop,discord_crash,mods_enabled,mod_list,script_updates,bckp_delold,log_delold,update_ignore_failed_startups"
 	IFS=","
 	for CONFIG_FIELD in $CONFIG_FIELDS; do
 		if ! grep -q $CONFIG_FIELD $SCRIPT_DIR/$SERVICE_NAME-config.conf; then
@@ -1860,7 +2072,9 @@ case "$1" in
 		echo -e "${CYAN}$NAME server script by 7thCore${NC}"
 		echo "Version: $VERSION"
 		echo ""
+		echo -e "${GREEN}-diag ${RED}- ${GREEN}Prints out package versions and if script files are installed${NC}"
 		echo -e "${GREEN}-start ${RED}- ${GREEN}Start the server${NC}"
+		echo -e "${GREEN}-start_no_err ${RED}- ${GREEN}Start the server but don't require confimation if in failed state${NC}"
 		echo -e "${GREEN}-stop ${RED}- ${GREEN}Stop the server${NC}"
 		echo -e "${GREEN}-restart ${RED}- ${GREEN}Restart the server${NC}"
 		echo -e "${GREEN}-backup ${RED}- ${GREEN}Backup files, if server running or not${NC}"
@@ -1874,13 +2088,14 @@ case "$1" in
 		echo -e "${GREEN}-disable_services ${RED}- ${GREEN}Disables all services. The server and the script will not start up on boot anymore${NC}"
 		echo -e "${GREEN}-enable_services ${RED}- ${GREEN}Enables all services dependant on the configuration file of the script${NC}"
 		echo -e "${GREEN}-reload_services ${RED}- ${GREEN}Reloads all services, dependant on the configuration file${NC}"
-		echo -e "${GREEN}-update ${RED}- ${GREEN}Update the server, if the server is running it wil save it, shut it down, update it and restart it${NC}"
+		echo -e "${GREEN}-update ${RED}- ${GREEN}Update the server, if the server is running it will save it, shut it down, update it and restart it${NC}"
+		echo -e "${GREEN}-verify ${RED}- ${GREEN}Verifiy game server files, if the server is running it will save it, shut it down, verify it and restart it${NC}"
 		echo -e "${GREEN}-update_mods ${RED}- ${GREEN}Update the server mods, if the server is running it wil save it, shut it down, update it and restart it${NC}"
 		echo -e "${GREEN}-update_script ${RED}- ${GREEN}Check github for script updates and update if newer version available${NC}"
 		echo -e "${GREEN}-update_script_force ${RED}- ${GREEN}Get latest script from github and install it no matter what the version${NC}"
 		echo -e "${GREEN}-status ${RED}- ${GREEN}Display status of server${NC}"
 		echo -e "${GREEN}-install ${RED}- ${GREEN}Installs all the needed files for the script to run, the wine prefix and the game${NC}"
-		echo -e "${GREEN}-install_packages ${RED}- ${GREEN}Installs all the needed packages (Supports only Arch linux & Ubuntu 19.10 and onward)${NC}"
+		echo -e "${GREEN}-install_packages ${RED}- ${GREEN}Installs all the needed packages (check supported distros)${NC}"
 		echo ""
 		echo -e "${LIGHTRED}If this is your first time running the script:${NC}"
 		echo -e "${LIGHTRED}Use the -install argument (run only this command as root) and follow the instructions${NC}"
@@ -1890,8 +2105,14 @@ case "$1" in
 		echo -e "${CYAN}Have a nice day!${NC}"
 		echo ""
 		;;
+	-diag)
+		script_diagnostics
+		;;
 	-start)
 		script_start
+		;;
+	-start_no_err)
+		script_start_ignore_errors $2
 		;;
 	-stop)
 		script_stop
@@ -1910,6 +2131,9 @@ case "$1" in
 		;;
 	-update)
 		script_update
+		;;
+	-verify)
+		script_verify_game_integrity
 		;;
 	-update_mods)
 		script_update_mods
@@ -1986,7 +2210,7 @@ case "$1" in
 	echo ""
 	echo "For more detailed information, execute the script with the -help argument"
 	echo ""
-	echo "Usage: $0 {start|stop|restart|backup|autobackup|deloldbackup|delete_save|change_branch|install_aliases|rebuild_tmux_config|rebuild_services|rebuild_prefix|disable_services|enable_services|reload_services|update|update_mods|update_script|update_script_force|attach|status|install|install_packages"
+	echo "Usage: $0 {diag|start|start_no_err|stop|restart|backup|autobackup|deloldbackup|delete_save|change_branch|install_aliases|rebuild_tmux_config|rebuild_services|rebuild_prefix|disable_services|enable_services|reload_services|update|verify|update_mods|update_script|update_script_force|attach|status|install|install_packages"
 	exit 1
 	;;
 esac
