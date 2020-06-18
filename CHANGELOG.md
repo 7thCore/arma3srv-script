@@ -1,3 +1,10 @@
+Update 2020-06-18
+
+- added Debian 10 (Buster) support
+- added error message if trying to install packages on non supported distro
+
+-------------------------
+
 Update 2020-04-24
 
 - added Ubuntu 20.04 LTS support
