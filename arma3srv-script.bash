@@ -2,7 +2,7 @@
 
 #Arma 3 server script by 7thCore
 #If you do not know what any of these settings are you are better off leaving them alone. One thing might brake the other if you fiddle around with it.
-export VERSION="202006222354"
+export VERSION="202007221311"
 
 #Basics
 export NAME="Arma3Srv" #Name of the tmux session
@@ -862,28 +862,12 @@ script_install_alias() {
 	fi
 }
 
-#Install or reinstall tmux configuration
-script_install_tmux_config() {
-	if [ "$EUID" -ne "0" ]; then #Check if script executed as root and asign the username for the installation process, otherwise use the executing user
-		script_logs
-		echo "$(date +"%Y-%m-%d %H:%M:%S") [$VERSION] [$NAME] [INFO] (Reinstall tmux configuration) Tmux configuration reinstallation commencing. Waiting on user configuration." | tee -a "$LOG_SCRIPT"
-		read -p "Are you sure you want to reinstall the tmux configuration? (y/n): " REINSTALL_SYSTEMD_SERVICES
-		if [[ "$REINSTALL_SYSTEMD_SERVICES" =~ ^([yY][eE][sS]|[yY])$ ]]; then
-			INSTALL_TMUX_CONFIG_STATE="1"
-		elif [[ "$REINSTALL_SYSTEMD_SERVICES" =~ ^([nN][oO]|[nN])$ ]]; then
-			echo "$(date +"%Y-%m-%d %H:%M:%S") [$VERSION] [$NAME] [INFO] (Reinstall tmux configuration) Tmux configuration reinstallation aborted." | tee -a "$LOG_SCRIPT"
-			INSTALL_TMUX_CONFIG_STATE="0"
-		fi
-	else
-		INSTALL_TMUX_CONFIG_STATE="1"
-	fi
-	
-	if [[ "$INSTALL_TMUX_CONFIG_STATE" == "1" ]]; then
-		if [ -f "$SCRIPT_DIR/$SERVICE_NAME-tmux.conf" ]; then
-			rm $SCRIPT_DIR/$SERVICE_NAME-tmux.conf
-		fi
-		
-		cat > $SCRIPT_DIR/$SERVICE_NAME-tmux.conf <<- EOF
+#Install tmux configuration for specific server when first ran
+script_server_tmux_install() {
+	echo "$(date +"%Y-%m-%d %H:%M:%S") [$VERSION] [$NAME] [INFO] (Server tmux configuration) Installing tmux configuration for server." | tee -a "$LOG_SCRIPT"
+	if [ ! -f /tmp/$USER-$SERVICE_NAME-tmux.conf ]; then
+		touch /tmp/$USER-$SERVICE_NAME-tmux.conf
+		cat > /tmp/$USER-$SERVICE_NAME-tmux.conf <<- EOF
 		#Tmux configuration
 		set -g activity-action other
 		set -g allow-rename off
@@ -949,7 +933,7 @@ script_install_tmux_config() {
 		bind C-a send-prefix
 
 		#Bind C-a r to reload the config file
-		bind-key r source-file $SCRIPT_DIR/$SERVICE_NAME-tmux.conf \; display-message "Config reloaded!"
+		bind-key r source-file /tmp/$USER-$SERVICE_NAME-tmux.conf \; display-message "Config reloaded!"
 
 		set-hook -g session-created 'resize-window -y 24 -x 10000'
 		set-hook -g client-attached 'resize-window -y 24 -x 10000'
@@ -968,14 +952,7 @@ script_install_tmux_config() {
 		#Copy/ scroll mode
 		#Ctrl-b [ (in copy mode you can navigate the buffer including scrolling the history. Use vi or emacs-style key bindings in copy mode. The default is emacs. To exit copy mode use one of the following keybindings: vi q emacs Esc)
 		EOF
-			
-
-	fi
-	
-	if [ "$EUID" -ne "0" ]; then
-		if [[ "$INSTALL_TMUX_CONFIG_STATE" == "1" ]]; then
-			echo "$(date +"%Y-%m-%d %H:%M:%S") [$VERSION] [$NAME] [INFO] (Reinstall tmux configuration) Tmux configuration reinstallation complete. Restart your server for changes to take affect." | tee -a "$LOG_SCRIPT"
-		fi
+		echo "$(date +"%Y-%m-%d %H:%M:%S") [$VERSION] [$NAME] [INFO] (Server tmux configuration) Tmux configuration for server installed successfully." | tee -a "$LOG_SCRIPT"
 	fi
 }
 
@@ -1036,12 +1013,14 @@ script_install_services() {
 		[Service]
 		Type=forking
 		WorkingDirectory=$SRV_DIR/
+		ExecStartPre=$SCRIPT_DIR/$SCRIPT_NAME -server_tmux_install
 		ExecStartPre=$SCRIPT_DIR/$SCRIPT_NAME -send_notification_start_initialized
-		ExecStart=/usr/bin/tmux -f $SCRIPT_DIR/$SERVICE_NAME-tmux.conf -L %u-tmux.sock new-session -d -s $NAME '$SRV_DIR/arma3server -name=$NAME -config=server.cfg -mod="$(find $SRV_DIR/ -maxdepth 1 -name "*@*" -printf '%f;')"'
+		ExecStart=/usr/bin/tmux -f /tmp/%u-$SERVICE_NAME-tmux.conf -L %u-tmux.sock new-session -d -s $NAME '$SRV_DIR/arma3server -name=$NAME -config=server.cfg -mod="$(find $SRV_DIR/ -maxdepth 1 -name "*@*" -printf '%f;')"'
 		ExecStartPost=$SCRIPT_DIR/$SCRIPT_NAME -send_notification_start_complete
 		ExecStop=$SCRIPT_DIR/$SCRIPT_NAME -send_notification_stop_initialized
-		ExecStop=/usr/bin/tmux -f $SCRIPT_DIR/$SERVICE_NAME-tmux.conf -L %u-tmux.sock send-keys -t $NAME.0 C-c
+		ExecStop=/usr/bin/tmux -L %u-tmux.sock send-keys -t $NAME.0 C-c
 		ExecStop=/usr/bin/sleep 10
+		ExecStopPost=/usr/bin/rm /tmp/%u-$SERVICE_NAME-tmux.conf
 		ExecStopPost=$SCRIPT_DIR/$SCRIPT_NAME -send_notification_stop_complete
 		TimeoutStartSec=infinity
 		TimeoutStopSec=120
@@ -1834,9 +1813,6 @@ script_install() {
 	cp "$(readlink -f $0)" $SCRIPT_DIR
 	chmod +x $SCRIPT_DIR/$SCRIPT_NAME
 	
-	echo "Installing tmux configuration for server console and logs"
-	script_install_tmux_config
-	
 	touch $SCRIPT_DIR/$SERVICE_NAME-config.conf
 	if [[ "$STEAM_STORE_CREDENTIALS" == "1" ]]; then
 		echo 'username='"$STEAMCMDUID" > $SCRIPT_DIR/$SERVICE_NAME-config.conf
@@ -2101,7 +2077,7 @@ EOF
 }
 
 #Do not allow for another instance of this script to run to prevent data loss
-if [[ "-send_notification_start_initialized" != "$1" ]] && [[ "-send_notification_start_complete" != "$1" ]] && [[ "-send_notification_stop_initialized" != "$1" ]] && [[ "-send_notification_stop_complete" != "$1" ]] && [[ "-send_notification_crash" != "$1" ]] && [[ "-attach" != "$1" ]] && [[ "-status" != "$1" ]]; then
+if [[ "-send_notification_start_initialized" != "$1" ]] && [[ "-send_notification_start_complete" != "$1" ]] && [[ "-send_notification_stop_initialized" != "$1" ]] && [[ "-send_notification_stop_complete" != "$1" ]] && [[ "-send_notification_crash" != "$1" ]] && [[ "-server_tmux_install" != "$1" ]] && [[ "-attach" != "$1" ]] && [[ "-status" != "$1" ]]; then
 	SCRIPT_PID_CHECK=$(basename -- "$0")
 	if pidof -x "$SCRIPT_PID_CHECK" -o $$ > /dev/null; then
 		echo "An another instance of this script is already running, please clear all the sessions of this script before starting a new session"
@@ -2110,6 +2086,7 @@ if [[ "-send_notification_start_initialized" != "$1" ]] && [[ "-send_notificatio
 fi
 
 if [ "$EUID" -ne "0" ] && [ -f "$SCRIPT_DIR/$SERVICE_NAME-config.conf" ]; then #Check if script executed as root, if not generate missing config fields
+	touch $SCRIPT_DIR/$SERVICE_NAME-config.conf
 	CONFIG_FIELDS="username,password,tmpfs_enable,beta_branch_enabled,beta_branch_name,email_sender,email_recipient,email_update,email_update_script,email_update_mod,email_start,email_stop,email_crash,discord_update,discord_update_script,discord_update_mod,discord_start,discord_stop,discord_crash,mods_enabled,mod_list,script_updates,bckp_delold,log_delold,update_ignore_failed_startups"
 	IFS=","
 	for CONFIG_FIELD in $CONFIG_FIELDS; do
@@ -2142,7 +2119,6 @@ case "$1" in
 		echo -e "${GREEN}-delete_save ${RED}- ${GREEN}Delete the server's save game with the option for deleting/keeping the server.cfg file${NC}"
 		echo -e "${GREEN}-change_branch ${RED}- ${GREEN}Changes the game branch in use by the server (public,experimental,legacy and so on.${NC}"
 		echo -e "${GREEN}-install_aliases ${RED}- ${GREEN}Installs .bashrc aliases for easy access to the server tmux session${NC}"
-		echo -e "${GREEN}-rebuild_tmux_config ${RED}- ${GREEN}Reinstalls the tmux configuration file from the script. Usefull if any tmux configuration updates occoured${NC}"
 		echo -e "${GREEN}-rebuild_services ${RED}- ${GREEN}Reinstalls the systemd services from the script. Usefull if any service updates occoured${NC}"
 		echo -e "${GREEN}-disable_services ${RED}- ${GREEN}Disables all services. The server and the script will not start up on boot anymore${NC}"
 		echo -e "${GREEN}-enable_services ${RED}- ${GREEN}Enables all services dependant on the configuration file of the script${NC}"
@@ -2239,8 +2215,8 @@ case "$1" in
 	-install_aliases)
 		script_install_alias
 		;;
-	-rebuild_tmux_config)
-		script_install_tmux_config
+	-server_tmux_install)
+		script_server_tmux_install
 		;;
 	-rebuild_services)
 		script_install_services
@@ -2269,7 +2245,7 @@ case "$1" in
 	echo ""
 	echo "For more detailed information, execute the script with the -help argument"
 	echo ""
-	echo "Usage: $0 {diag|start|start_no_err|stop|restart|backup|autobackup|deloldbackup|delete_save|change_branch|install_aliases|rebuild_tmux_config|rebuild_services|rebuild_prefix|disable_services|enable_services|reload_services|update|verify|update_mods|update_script|update_script_force|attach|status|install|install_packages"
+	echo "Usage: $0 {diag|start|start_no_err|stop|restart|backup|autobackup|deloldbackup|delete_save|change_branch|install_aliases|rebuild_services|disable_services|enable_services|reload_services|update|verify|update_mods|update_script|update_script_force|attach|status|install|install_packages"
 	exit 1
 	;;
 esac
