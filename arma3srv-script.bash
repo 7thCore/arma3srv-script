@@ -2,7 +2,7 @@
 
 #Arma 3 server script by 7thCore
 #If you do not know what any of these settings are you are better off leaving them alone. One thing might brake the other if you fiddle around with it.
-export VERSION="202007221311"
+export VERSION="202012090456"
 
 #Basics
 export NAME="Arma3Srv" #Name of the tmux session
@@ -1345,7 +1345,7 @@ script_install_packages() {
 			#Get codename
 			UBUNTU_CODENAME=$(cat /etc/os-release | grep "^UBUNTU_CODENAME=" | cut -d = -f2)
 			
-			if [[ "$UBUNTU_CODENAME" == "bionic" || "$UBUNTU_CODENAME" == "eoan" || "$UBUNTU_CODENAME" == "focal" ]]; then
+			if [[ "$UBUNTU_CODENAME" == "bionic" || "$UBUNTU_CODENAME" == "eoan" || "$UBUNTU_CODENAME" == "focal" || "$UBUNTU_CODENAME" == "groovy" ]]; then
 				#Add i386 architecture support
 				apt install --yes sudo gnupg
 				sudo dpkg --add-architecture i386
@@ -1378,7 +1378,7 @@ script_install_packages() {
 				sudo apt install --yes --install-recommends -y steamcmd
 				sudo apt install --yes rsync unzip p7zip wget curl tmux postfix zip jq
 			else
-				echo "Error: This version of Ubuntu is not supported. Supported versions are: Ubuntu 18.04 LTS (Bionic Beaver), Ubuntu 19.10 (Disco Dingo), Ubuntu 20.04 LTS (Focal Fossa)"
+				echo "Error: This version of Ubuntu is not supported. Supported versions are: Ubuntu 18.04 LTS (Bionic Beaver), Ubuntu 19.10 (Disco Dingo), Ubuntu 20.04 LTS (Focal Fossa), Ubuntu 20.10 (Groovy Gorilla)"
 				echo "Exiting"
 				exit 1
 			fi
@@ -1424,12 +1424,12 @@ script_install_packages() {
 		fi
 		
 		if [[ "$DISTRO" == "arch" ]]; then
-			echo "Arch Linux users have to install SteamCMD with an AUR tool."
+			echo "Arch Linux users have to install SteamCMD with an AUR tool or manually download it."
 		fi
 		echo "Package installation complete."
 	else
 		echo "os-release file not found. Is this distro supported?"
-		echo "This script currently supports Arch Linux,  Ubuntu 18.04 LTS (Bionic Beaver), Ubuntu 19.10 (Disco Dingo), Ubuntu 20.04 LTS (Focal Fossa)"
+		echo "This script currently supports Arch Linux,  Ubuntu 18.04 LTS (Bionic Beaver), Ubuntu 19.10 (Disco Dingo), Ubuntu 20.04 LTS (Focal Fossa), Ubuntu 20.10 (Groovy Gorilla), Debian 10 (Buster)"
 		exit 1
 	fi
 }
