@@ -1,0 +1,9 @@
+post_install() {
+  getent group arma3srv >/dev/null || groupadd --system arma3srv
+  getent passwd arma3srv >/dev/null || useradd --system -g arma3srv \
+    -d /srv/arma3srv/ -s /bin/bash arma3srv
+
+  chown -R arma3srv:arma3srv srv/arma3srv
+  loginctl enable-linger arma3srv
+  systemctl start user@$(id -u arma3srv).service
+}
