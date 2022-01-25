@@ -1,0 +1,45 @@
+#    Copyright (C) 2022 7thCore
+#    This file is part of Arma3Srv-Script.
+#
+#    Arma3Srv-Script is free software: you can redistribute it and/or modify
+#    it under the terms of the GNU General Public License as published by
+#    the Free Software Foundation, either version 3 of the License, or
+#    (at your option) any later version.
+#
+#    Arma3Srv-Script is distributed in the hope that it will be useful,
+#    but WITHOUT ANY WARRANTY; without even the implied warranty of
+#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#    GNU General Public License for more details.
+#
+#    You should have received a copy of the GNU General Public License
+#    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+[Unit]
+Description=Arma3Srv Server Service
+After=network.target
+StartLimitBurst=3
+StartLimitIntervalSec=300
+StartLimitAction=none
+OnFailure=arma3srv-send-notification.service
+
+[Service]
+Type=forking
+KillMode=process
+WorkingDirectory=/srv/arma3srv/server
+ExecStartPre=/usr/bin/arma3srv-script server_tmux_install
+ExecStartPre=/usr/bin/arma3srv-script send_notification_start_initialized
+ExecStart=/usr/bin/tmux -f /tmp/%u-tmux.conf -L %u-tmux.sock new-session -d -s Arma3Srv '/srv/arma3srv/server/arma3server -name=Arma3Srv -config=server.cfg -mod="$(find /srv/arma3srv/server/ -maxdepth 1 -name "*@*" -printf '%f;')"'
+ExecStartPost=/usr/bin/arma3srv-script send_notification_start_complete
+ExecStop=/usr/bin/arma3srv-script send_notification_stop_initialized
+ExecStop=/usr/bin/tmux -L %u-tmux.sock send-keys -t Arma3Srv.0 C-c
+ExecStop=/usr/bin/sleep 10
+ExecStopPost=/usr/bin/rm /tmp/%u-tmux.conf
+ExecStopPost=/usr/bin/arma3srv-script move_wine_log
+ExecStopPost=/usr/bin/arma3srv-script send_notification_stop_complete
+TimeoutStartSec=infinity
+TimeoutStopSec=120
+RestartSec=10
+Restart=on-failure
+
+[Install]
+WantedBy=default.target
