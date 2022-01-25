@@ -1,3 +1,17 @@
 # Arma3Srv Script
 
-Bash script for running Arma 3 on a linux server with Antistasi mod integration
+Arma 3 dedicated server script for the Linux operating system. Coded to take full advantage of Linux's systemd service management. Pre-built packages are available for Arch and Debian based distributions for easy installation. More details available on the project's wiki page.
+
+---
+
+Check the wiki for detailed instructions:
+
+[Arma3Srv Script Wiki](../../wikis)
+
+-------------------------
+
+Pre-built packages available for Arch and Debian based distributions:
+
+[Pre-built packages](built-packages)
+
+-------------------------
