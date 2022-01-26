@@ -2018,7 +2018,7 @@ case "$1" in
 		script_send_notification_crash
 		;;
 	server_tmux_install)
-		script_server_tmux_install
+		script_server_tmux_install $2
 		;;
 	timer_one)
 		script_timer_one
