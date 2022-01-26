@@ -34,7 +34,7 @@ source=('bash_profile'
         'arma3srv-timer-2.service'
         'arma3srv-timer-2.timer')
 sha256sums=('f1e2f643b81b27d16fe79e0563e39c597ce42621ae7c2433fd5b70f1eeab5d63'
-            'b2760355abe082eb592b92e12e859dae3e74127501502d17058f699a2e0ff581'
+            '50f710bf72f75bcd5dc3699d707a0bef9782d3af80e1e49ad4df9eb0d272e4bb'
             '3c8c4af7aada541b0bb83e60160f17a985580d43b88fbb8958984026c657e113'
             'a21be911ce7ffd4d984f22d0d87720de91c27593bfaae31118a800d1dce2e8b3'
             'c53ffd7e1b352e91896cb1c59cbd634aa62a4905707a07b3f8d2a31245773e88'
