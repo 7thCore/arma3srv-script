@@ -2,7 +2,7 @@
 
 pkgname=arma3srv-script
 pkgver=1.0
-pkgrel=1
+pkgrel=2
 pkgdesc='Arma 3 server script for running the server on linux.'
 arch=('x86_64')
 license=('GPL3')
@@ -14,14 +14,14 @@ depends=('bash'
          'awk'
          'curl'
          'rsync'
+         'wget'
          'findutils'
+         'tmux'
+         'jq'
+         'zip'
          'unzip'
          'p7zip'
-         'wget'
-         'tmux'
          'postfix'
-         'zip'
-         'jq'
          'samba'
          'steamcmd')
 install=arma3srv-script.install
@@ -34,7 +34,7 @@ source=('bash_profile'
         'arma3srv-timer-2.service'
         'arma3srv-timer-2.timer')
 sha256sums=('f1e2f643b81b27d16fe79e0563e39c597ce42621ae7c2433fd5b70f1eeab5d63'
-            'daa3082f6c993d12fe4d8ce918be6c0ee4f14dbfd561c4052e5e259e159833d3'
+            'b2760355abe082eb592b92e12e859dae3e74127501502d17058f699a2e0ff581'
             '3c8c4af7aada541b0bb83e60160f17a985580d43b88fbb8958984026c657e113'
             'a21be911ce7ffd4d984f22d0d87720de91c27593bfaae31118a800d1dce2e8b3'
             'c53ffd7e1b352e91896cb1c59cbd634aa62a4905707a07b3f8d2a31245773e88'

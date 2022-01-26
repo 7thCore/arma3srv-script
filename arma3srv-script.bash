@@ -21,7 +21,7 @@
 
 #Basics
 export NAME="Arma3Srv" #Name of the tmux session
-export VERSION="1.0-1" #Package and script version
+export VERSION="1.0-2" #Package and script version
 
 #Server configuration
 export SERVICE_NAME="arma3srv" #Name of the service files, user, script and script log
@@ -38,21 +38,13 @@ UPDATE_DIR="/srv/$SERVICE_NAME/updates" #Location of update information for the 
 
 #Script configuration
 if [ -f "$CONFIG_DIR/$SERVICE_NAME-script.conf" ] ; then
-	TMPFS_ENABLE=$(cat $CONFIG_DIR/$SERVICE_NAME-script.conf | grep script_tmpfs= | cut -d = -f2) #Get configuration for tmpfs
 	BCKP_DELOLD=$(cat $CONFIG_DIR/$SERVICE_NAME-script.conf | grep script_bckp_delold= | cut -d = -f2) #Delete old backups.
 	LOG_DELOLD=$(cat $CONFIG_DIR/$SERVICE_NAME-script.conf | grep script_log_delold= | cut -d = -f2) #Delete old logs.
-	LOG_GAME_DELOLD=$(cat $CONFIG_DIR/$SERVICE_NAME-script.conf | grep script_log_game_delold= | cut -d = -f2) #Delete old game logs.
-	DUMP_GAME_DELOLD=$(cat $CONFIG_DIR/$SERVICE_NAME-script.conf | grep script_dump_game_delold= | cut -d = -f2) #Delete old game dumps.
 	UPDATE_IGNORE_FAILED_ACTIVATIONS=$(cat $CONFIG_DIR/$SERVICE_NAME-script.conf | grep script_update_ignore_failed_startups= | cut -d = -f2) #Ignore failed startups during update configuration
-	TIMEOUT_SAVE=$(cat $CONFIG_DIR/$SERVICE_NAME-script.conf | grep script_timeout_save= | cut -d = -f2) #Get timeout configuration for save timeout.
 else
-	TMPFS_ENABLE=0
 	BCKP_DELOLD=7
 	LOG_DELOLD=7
-	LOG_GAME_DELOLD=7
-	DUMP_GAME_DELOLD=7
 	UPDATE_IGNORE_FAILED_ACTIVATIONS=0
-	TIMEOUT_SAVE=120
 fi
 
 #Steamcmd configuration
@@ -963,95 +955,106 @@ script_verify_game_integrity() {
 
 #Install tmux configuration for specific server when first ran
 script_server_tmux_install() {
-	echo "$(date +"%Y-%m-%d %H:%M:%S") [$VERSION] [$NAME] [INFO] (Server tmux configuration) Installing tmux configuration for server." | tee -a "$LOG_SCRIPT"
-	if [ ! -f /tmp/$SERVICE_NAME-tmux.conf ]; then
-		touch /tmp/$SERVICE_NAME-tmux.conf
-		cat > /tmp/$SERVICE_NAME-tmux.conf <<- EOF
-		#Tmux configuration
-		set -g activity-action other
-		set -g allow-rename off
-		set -g assume-paste-time 1
-		set -g base-index 0
-		set -g bell-action any
-		set -g default-command "${SHELL}"
-		set -g default-terminal "tmux-256color" 
-		set -g default-shell "/bin/bash"
-		set -g default-size "132x42"
-		set -g destroy-unattached off
-		set -g detach-on-destroy on
-		set -g display-panes-active-colour red
-		set -g display-panes-colour blue
-		set -g display-panes-time 1000
-		set -g display-time 3000
-		set -g history-limit 10000
-		set -g key-table "root"
-		set -g lock-after-time 0
-		set -g lock-command "lock -np"
-		set -g message-command-style fg=yellow,bg=black
-		set -g message-style fg=black,bg=yellow
-		set -g mouse on
-		#set -g prefix C-b
-		set -g prefix2 None
-		set -g renumber-windows off
-		set -g repeat-time 500
-		set -g set-titles off
-		set -g set-titles-string "#S:#I:#W - \"#T\" #{session_alerts}"
-		set -g silence-action other
-		set -g status on
-		set -g status-bg green
-		set -g status-fg black
-		set -g status-format[0] "#[align=left range=left #{status-left-style}]#{T;=/#{status-left-length}:status-left}#[norange default]#[list=on align=#{status-justify}]#[list=left-marker]<#[list=right-marker]>#[list=on]#{W:#[range=window|#{window_index} #{window-status-style}#{?#{&&:#{window_last_flag},#{!=:#{window-status-last-style},default}}, #{window-status-last-style},}#{?#{&&:#{window_bell_flag},#{!=:#{window-status-bell-style},default}}, #{window-status-bell-style},#{?#{&&:#{||:#{window_activity_flag},#{window_silence_flag}},#{!=:#{window-status-activity-style},default}}, #{window-status-activity-style},}}]#{T:window-status-format}#[norange default]#{?window_end_flag,,#{window-status-separator}},#[range=window|#{window_index} list=focus #{?#{!=:#{window-status-current-style},default},#{window-status-current-style},#{window-status-style}}#{?#{&&:#{window_last_flag},#{!=:#{window-status-last-style},default}}, #{window-status-last-style},}#{?#{&&:#{window_bell_flag},#{!=:#{window-status-bell-style},default}}, #{window-status-bell-style},#{?#{&&:#{||:#{window_activity_flag},#{window_silence_flag}},#{!=:#{window-status-activity-style},default}}, #{window-status-activity-style},}}]#{T:window-status-current-format}#[norange list=on default]#{?window_end_flag,,#{window-status-separator}}}#[nolist align=right range=right #{status-right-style}]#{T;=/#{status-right-length}:status-right}#[norange default]"
-		set -g status-format[1] "#[align=centre]#{P:#{?pane_active,#[reverse],}#{pane_index}[#{pane_width}x#{pane_height}]#[default] }"
-		set -g status-interval 15
-		set -g status-justify left
-		set -g status-keys emacs
-		set -g status-left "[#S] "
-		set -g status-left-length 10
-		set -g status-left-style default
-		set -g status-position bottom
-		set -g status-right "#{?window_bigger,[#{window_offset_x}#,#{window_offset_y}] ,}\"#{=21:pane_title}\" %H:%M %d-%b-%y"
-		set -g status-right-length 40
-		set -g status-right-style default
-		set -g status-style fg=black,bg=green
-		set -g update-environment[0] "DISPLAY"
-		set -g update-environment[1] "KRB5CCNAME"
-		set -g update-environment[2] "SSH_ASKPASS"
-		set -g update-environment[3] "SSH_AUTH_SOCK"
-		set -g update-environment[4] "SSH_AGENT_PID"
-		set -g update-environment[5] "SSH_CONNECTION"
-		set -g update-environment[6] "WINDOWID"
-		set -g update-environment[7] "XAUTHORITY"
-		set -g visual-activity off
-		set -g visual-bell off
-		set -g visual-silence off
-		set -g word-separators " -_@"
+	if [ -z "$1" ]; then
+		echo "$(date +"%Y-%m-%d %H:%M:%S") [$VERSION] [$NAME] [INFO] (Server tmux configuration) Installing tmux configuration for server." | tee -a "$LOG_SCRIPT"
+		TMUX_CONFIG_FILE="/tmp/$SERVICE_NAME-tmux.conf"
+	elif [[ "$1" == "override" ]]; then
+		echo "$(date +"%Y-%m-%d %H:%M:%S") [$VERSION] [$NAME] [INFO] (Server tmux configuration) Installing tmux override configuration for server." | tee -a "$LOG_SCRIPT"
+		TMUX_CONFIG_FILE="/srv/$SERVICE_NAME/config/$SERVICE_NAME-tmux.conf"
+	fi
+	
+	if [ -f /srv/$SERVICE_NAME/config/$SERVICE_NAME-tmux.conf ]; then
+		cp /srv/$SERVICE_NAME/config/$SERVICE_NAME-tmux.conf /tmp/$SERVICE_NAME-tmux.conf
+	else
+		if [ ! -f $TMUX_CONFIG_FILE ]; then
+			touch $TMUX_CONFIG_FILE
+			cat > $TMUX_CONFIG_FILE <<- EOF
+			#Tmux configuration
+			set -g activity-action other
+			set -g allow-rename off
+			set -g assume-paste-time 1
+			set -g base-index 0
+			set -g bell-action any
+			set -g default-command "${SHELL}"
+			set -g default-terminal "tmux-256color" 
+			set -g default-shell "/bin/bash"
+			set -g default-size "132x42"
+			set -g destroy-unattached off
+			set -g detach-on-destroy on
+			set -g display-panes-active-colour red
+			set -g display-panes-colour blue
+			set -g display-panes-time 1000
+			set -g display-time 3000
+			set -g history-limit 10000
+			set -g key-table "root"
+			set -g lock-after-time 0
+			set -g lock-command "lock -np"
+			set -g message-command-style fg=yellow,bg=black
+			set -g message-style fg=black,bg=yellow
+			set -g mouse on
+			#set -g prefix C-b
+			set -g prefix2 None
+			set -g renumber-windows off
+			set -g repeat-time 500
+			set -g set-titles off
+			set -g set-titles-string "#S:#I:#W - \"#T\" #{session_alerts}"
+			set -g silence-action other
+			set -g status on
+			set -g status-bg green
+			set -g status-fg black
+			set -g status-format[0] "#[align=left range=left #{status-left-style}]#{T;=/#{status-left-length}:status-left}#[norange default]#[list=on align=#{status-justify}]#[list=left-marker]<#[list=right-marker]>#[list=on]#{W:#[range=window|#{window_index} #{window-status-style}#{?#{&&:#{window_last_flag},#{!=:#{window-status-last-style},default}}, #{window-status-last-style},}#{?#{&&:#{window_bell_flag},#{!=:#{window-status-bell-style},default}}, #{window-status-bell-style},#{?#{&&:#{||:#{window_activity_flag},#{window_silence_flag}},#{!=:#{window-status-activity-style},default}}, #{window-status-activity-style},}}]#{T:window-status-format}#[norange default]#{?window_end_flag,,#{window-status-separator}},#[range=window|#{window_index} list=focus #{?#{!=:#{window-status-current-style},default},#{window-status-current-style},#{window-status-style}}#{?#{&&:#{window_last_flag},#{!=:#{window-status-last-style},default}}, #{window-status-last-style},}#{?#{&&:#{window_bell_flag},#{!=:#{window-status-bell-style},default}}, #{window-status-bell-style},#{?#{&&:#{||:#{window_activity_flag},#{window_silence_flag}},#{!=:#{window-status-activity-style},default}}, #{window-status-activity-style},}}]#{T:window-status-current-format}#[norange list=on default]#{?window_end_flag,,#{window-status-separator}}}#[nolist align=right range=right #{status-right-style}]#{T;=/#{status-right-length}:status-right}#[norange default]"
+			set -g status-format[1] "#[align=centre]#{P:#{?pane_active,#[reverse],}#{pane_index}[#{pane_width}x#{pane_height}]#[default] }"
+			set -g status-interval 15
+			set -g status-justify left
+			set -g status-keys emacs
+			set -g status-left "[#S] "
+			set -g status-left-length 10
+			set -g status-left-style default
+			set -g status-position bottom
+			set -g status-right "#{?window_bigger,[#{window_offset_x}#,#{window_offset_y}] ,}\"#{=21:pane_title}\" %H:%M %d-%b-%y"
+			set -g status-right-length 40
+			set -g status-right-style default
+			set -g status-style fg=black,bg=green
+			set -g update-environment[0] "DISPLAY"
+			set -g update-environment[1] "KRB5CCNAME"
+			set -g update-environment[2] "SSH_ASKPASS"
+			set -g update-environment[3] "SSH_AUTH_SOCK"
+			set -g update-environment[4] "SSH_AGENT_PID"
+			set -g update-environment[5] "SSH_CONNECTION"
+			set -g update-environment[6] "WINDOWID"
+			set -g update-environment[7] "XAUTHORITY"
+			set -g visual-activity off
+			set -g visual-bell off
+			set -g visual-silence off
+			set -g word-separators " -_@"
 
-		#Change prefix key from ctrl+b to ctrl+a
-		unbind C-b
-		set -g prefix C-a
-		bind C-a send-prefix
+			#Change prefix key from ctrl+b to ctrl+a
+			unbind C-b
+			set -g prefix C-a
+			bind C-a send-prefix
 
-		#Bind C-a r to reload the config file
-		bind-key r source-file /tmp/$SERVICE_NAME-tmux.conf \; display-message "Config reloaded!"
+			#Bind C-a r to reload the config file
+			bind-key r source-file /tmp/$SERVICE_NAME-tmux.conf \; display-message "Config reloaded!"
 
-		set-hook -g session-created 'resize-window -y 24 -x 10000'
-		set-hook -g client-attached 'resize-window -y 24 -x 10000'
-		set-hook -g client-detached 'resize-window -y 24 -x 10000'
-		set-hook -g client-resized 'resize-window -y 24 -x 10000'
+			set-hook -g session-created 'resize-window -y 24 -x 10000'
+			set-hook -g client-attached 'resize-window -y 24 -x 10000'
+			set-hook -g client-detached 'resize-window -y 24 -x 10000'
+			set-hook -g client-resized 'resize-window -y 24 -x 10000'
 
-		#Default key bindings (only here for info)
-		#Ctrl-b l (Move to the previously selected window)
-		#Ctrl-b w (List all windows / window numbers)
-		#Ctrl-b <window number> (Move to the specified window number, the default bindings are from 0 – 9)
-		#Ctrl-b q  (Show pane numbers, when the numbers show up type the key to goto that pane)
+			#Default key bindings (only here for info)
+			#Ctrl-b l (Move to the previously selected window)
+			#Ctrl-b w (List all windows / window numbers)
+			#Ctrl-b <window number> (Move to the specified window number, the default bindings are from 0 – 9)
+			#Ctrl-b q  (Show pane numbers, when the numbers show up type the key to goto that pane)
 
-		#Ctrl-b f <window name> (Search for window name)
-		#Ctrl-b w (Select from interactive list of windows)
+			#Ctrl-b f <window name> (Search for window name)
+			#Ctrl-b w (Select from interactive list of windows)
 
-		#Copy/ scroll mode
-		#Ctrl-b [ (in copy mode you can navigate the buffer including scrolling the history. Use vi or emacs-style key bindings in copy mode. The default is emacs. To exit copy mode use one of the following keybindings: vi q emacs Esc)
-		EOF
-		echo "$(date +"%Y-%m-%d %H:%M:%S") [$VERSION] [$NAME] [INFO] (Server tmux configuration) Tmux configuration for server installed successfully." | tee -a "$LOG_SCRIPT"
+			#Copy/ scroll mode
+			#Ctrl-b [ (in copy mode you can navigate the buffer including scrolling the history. Use vi or emacs-style key bindings in copy mode. The default is emacs. To exit copy mode use one of the following keybindings: vi q emacs Esc)
+			EOF
+			echo "$(date +"%Y-%m-%d %H:%M:%S") [$VERSION] [$NAME] [INFO] (Server tmux configuration) Tmux configuration for server installed successfully." | tee -a "$LOG_SCRIPT"
+		fi
 	fi
 }
 
@@ -1107,32 +1110,51 @@ script_timer_two() {
 #Runs the diagnostics
 script_diagnostics() {
 	echo "Initializing diagnostics. Please wait..."
+	echo ""
 	sleep 3
-	
+
 	#Check package versions
-	echo "wine version: $(wine --version)"
-	echo "winetricks version: $(winetricks --version)"
-	echo "tmux version: $(tmux -V)"
-	echo "rsync version: $(rsync --version | head -n 1)"
-	echo "curl version: $(curl --version | head -n 1)"
-	echo "wget version: $(wget --version | head -n 1)"
-	echo "cabextract version: $(cabextract --version)"
-	echo "postfix version: $(postconf mail_version)"
-	
-	#Get distro name
-	DISTRO=$(cat /etc/os-release | grep "^ID=" | cut -d = -f2)
-	
-	#Check package versions
-	if [[ "$DISTRO" == "arch" ]]; then
-		echo "xvfb version:$(pacman -Qi xorg-server-xvfb | grep "^Version" | cut -d : -f2)"
-		echo "postfix version:$(pacman -Qi postfix | grep "^Version" | cut -d : -f2)"
+	echo "Checkign package versions:"
+	if [ -f "/usr/bin/pacman" ]; then
+		echo "bash version:$(pacman -Qi bash | grep "^Version" | cut -d : -f2)"
+		echo "coreutils version:$(pacman -Qi coreutils | grep "^Version" | cut -d : -f2)"
+		echo "sudo version:$(pacman -Qi sudo | grep "^Version" | cut -d : -f2)"
+		echo "grep version:$(pacman -Qi grep | grep "^Version" | cut -d : -f2)"
+		echo "sed version:$(pacman -Qi sed | grep "^Version" | cut -d : -f2)"
+		echo "awk version:$(pacman -Qi awk | grep "^Version" | cut -d : -f2)"
+		echo "curl version:$(pacman -Qi curl | grep "^Version" | cut -d : -f2)"
+		echo "rsync version:$(pacman -Qi rsync | grep "^Version" | cut -d : -f2)"
+		echo "wget version:$(pacman -Qi wget | grep "^Version" | cut -d : -f2)"
+		echo "findutils version:$(pacman -Qi findutils | grep "^Version" | cut -d : -f2)"
+		echo "tmux version:$(pacman -Qi tmux | grep "^Version" | cut -d : -f2)"
+		echo "jq version:$(pacman -Qi jq | grep "^Version" | cut -d : -f2)"
 		echo "zip version:$(pacman -Qi zip | grep "^Version" | cut -d : -f2)"
-	elif [[ "$DISTRO" == "ubuntu" ]]; then
-		echo "xvfb version:$(dpkg -s xvfb | grep "^Version" | cut -d : -f2)"
-		echo "postfix version:$(dpkg -s postfix | grep "^Version" | cut -d : -f2)"
+		echo "unzip version:$(pacman -Qi unzip | grep "^Version" | cut -d : -f2)"
+		echo "p7zip version:$(pacman -Qi p7zip | grep "^Version" | cut -d : -f2)"
+		echo "postfix version:$(pacman -Qi postfix | grep "^Version" | cut -d : -f2)"
+		echo "samba version:$(pacman -Qi samba | grep "^Version" | cut -d : -f2)"
+	elif [ -f "/usr/bin/dpkg" ]; then
+		echo "bash version:$(dpkg -s bash | grep "^Version" | cut -d : -f2)"
+		echo "coreutils version:$(dpkg -s coreutils | grep "^Version" | cut -d : -f2)"
+		echo "sudo version:$(dpkg -s sudo | grep "^Version" | cut -d : -f2)"
+		echo "libpam-systemd version:$(dpkg -s libpam-systemd | grep "^Version" | cut -d : -f2)"
+		echo "grep version:$(dpkg -s grep | grep "^Version" | cut -d : -f2)"
+		echo "sed version:$(dpkg -s sed | grep "^Version" | cut -d : -f2)"
+		echo "gawk version:$(dpkg -s gawk | grep "^Version" | cut -d : -f2)"
+		echo "curl version:$(dpkg -s curl | grep "^Version" | cut -d : -f2)"
+		echo "rsync version:$(dpkg -s rsync | grep "^Version" | cut -d : -f2)"
+		echo "wget version:$(dpkg -s wget | grep "^Version" | cut -d : -f2)"
+		echo "findutils version:$(dpkg -s findutils | grep "^Version" | cut -d : -f2)"
+		echo "tmux version:$(dpkg -s tmux | grep "^Version" | cut -d : -f2)"
+		echo "jq version:$(dpkg -s jq | grep "^Version" | cut -d : -f2)"
 		echo "zip version:$(dpkg -s zip | grep "^Version" | cut -d : -f2)"
+		echo "unzip version:$(dpkg -s unzip | grep "^Version" | cut -d : -f2)"
+		echo "p7zip version:$(dpkg -s p7zip | grep "^Version" | cut -d : -f2)"
+		echo "postfix version:$(dpkg -s postfix | grep "^Version" | cut -d : -f2)"
 	fi
-	
+	echo ""
+
+	echo "Checking if files and folders present:"
 	#Check if files/folders present
 	if [ -f "$SCRIPT_DIR/$SCRIPT_NAME" ] ; then
 		echo "Script installed: Yes"
@@ -1815,13 +1837,9 @@ script_config_script() {
 	fi
 
 	touch $CONFIG_DIR/$SERVICE_NAME-script.conf
-	echo 'script_tmpfs=0' >> $CONFIG_DIR/$SERVICE_NAME-script.conf
 	echo 'script_bckp_delold=14' >> $CONFIG_DIR/$SERVICE_NAME-script.conf
 	echo 'script_log_delold=7' >> $CONFIG_DIR/$SERVICE_NAME-script.conf
-	echo 'script_log_game_delold=7' >> $CONFIG_DIR/$SERVICE_NAME-script.conf
-	echo 'script_dump_game_delold=7' >> $CONFIG_DIR/$SERVICE_NAME-script.conf
 	echo 'script_update_ignore_failed_startups=0' >> $CONFIG_DIR/$SERVICE_NAME-script.conf
-	echo 'script_timeout_save=120' >> $CONFIG_DIR/$SERVICE_NAME-script.conf
 
 	if [ ! -d "$BCKP_SRC_DIR" ]; then
 		mkdir -p "$BCKP_SRC_DIR"
