@@ -21,7 +21,7 @@
 
 #Basics
 export NAME="Arma3Srv" #Name of the tmux session
-export VERSION="1.0-3" #Package and script version
+export VERSION="1.0-4" #Package and script version
 
 #Server configuration
 export SERVICE_NAME="arma3srv" #Name of the service files, user, script and script log
@@ -1078,7 +1078,6 @@ script_timer_one() {
 			script_update
 			script_update_mods
 		fi
-		script_update_github
 	fi
 }
 
@@ -1101,7 +1100,6 @@ script_timer_two() {
 			script_update
 			script_update_mods
 		fi
-		script_update_github
 	fi
 }
 
