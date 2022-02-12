@@ -21,14 +21,14 @@
 
 #Static script variables
 export NAME="Arma3Srv" #Name of the tmux session
-export VERSION="1.0-6" #Package and script version
+export VERSION="1.0-7" #Package and script version
 export SERVICE_NAME="arma3srv" #Name of the service files, user, script and script log
 export LOG_DIR="/srv/$SERVICE_NAME/logs" #Location of the script's log files.
 export LOG_STRUCTURE="$LOG_DIR/$(date +"%Y")/$(date +"%m")/$(date +"%d")" #Folder structure of the script's log files.
 export LOG_SCRIPT="$LOG_STRUCTURE/$SERVICE_NAME-script.log" #Script log.
-SRV_DIR="/srv/$SERVICE_NAME/server" #Location of the server located on your hdd/ssd.
+SRV_DIR="$SRV_DIR" #Location of the server located on your hdd/ssd.
 CONFIG_DIR="/srv/$SERVICE_NAME/config" #Location of this script's configuration.
-UPDATE_DIR="/srv/$SERVICE_NAME/updates" #Location of update information for the script's automatic update feature.
+UPDATE_DIR="$UPDATE_DIR" #Location of update information for the script's automatic update feature.
 BCKP_DIR="/srv/$SERVICE_NAME/backups" #Location of stored backups
 BCKP_STRUCTURE="$(date +"%Y")/$(date +"%m")/$(date +"%d")" #How backups are sorted, by default it's sorted in folders by month and day.
 
@@ -747,14 +747,14 @@ script_update_mods() {
 					steamcmd +force_install_dir $SRV_DIR/ +login $STEAMCMD_UID $STEAMCMD_PSW +workshop_download_item $APPID_WORKSHOP $MOD_ID +quit
 				fi
 
-				ln -s /srv/$SERVICE_NAME/server/steamapps/workshop/content/$APPID_WORKSHOP/$MOD_ID /srv/$SERVICE_NAME/server/@${MOD_NAME}
+				ln -s $SRV_DIR/steamapps/workshop/content/$APPID_WORKSHOP/$MOD_ID $SRV_DIR/@${MOD_NAME}
 
-				if [ -f "/srv/$SERVICE_NAME/server/steamapps/workshop/content/$APPID_WORKSHOP/keys/*.bikey" ]; then
-					cp -rf /srv/$SERVICE_NAME/server/steamapps/workshop/content/$APPID_WORKSHOP/keys/*.bikey /srv/$SERVICE_NAME/server/keys/
+				if [ -f "$SRV_DIR/steamapps/workshop/content/$APPID_WORKSHOP/keys/*.bikey" ]; then
+					cp -rf $SRV_DIR/steamapps/workshop/content/$APPID_WORKSHOP/keys/*.bikey $SRV_DIR/keys/
 				fi
 
-				if [ -f "/srv/$SERVICE_NAME/server/steamapps/workshop/content/$APPID_WORKSHOP/key/*.bikey" ]; then
-					cp -rf /srv/$SERVICE_NAME/server/steamapps/workshop/content/$APPID_WORKSHOP/key/*.bikey /srv/$SERVICE_NAME/server/keys/
+				if [ -f "$SRV_DIR/steamapps/workshop/content/$APPID_WORKSHOP/key/*.bikey" ]; then
+					cp -rf $SRV_DIR/steamapps/workshop/content/$APPID_WORKSHOP/key/*.bikey $SRV_DIR/keys/
 				fi
 
 				echo "$AVAILABLE_VERSION_MOD" > $UPDATE_DIR/mods/$MOD_NAME.mod_version
@@ -957,7 +957,7 @@ script_diagnostics() {
 		echo "Configuration file present: No"
 	fi
 
-	if [ -d "/srv/$SERVICE_NAME/backups" ]; then
+	if [ -d "$BCKP_DIR" ]; then
 		echo "Backups folder present: Yes"
 	else
 		echo "Backups folder present: No"
@@ -975,13 +975,13 @@ script_diagnostics() {
 		echo "Scripts folder present: No"
 	fi
 
-	if [ -d "/srv/$SERVICE_NAME/server" ]; then
+	if [ -d "$SRV_DIR" ]; then
 		echo "Server folder present: Yes"
 	else
 		echo "Server folder present: No"
 	fi
 
-	if [ -d "/srv/$SERVICE_NAME/updates" ]; then
+	if [ -d "$UPDATE_DIR" ]; then
 		echo "Updates folder present: Yes"
 	else
 		echo "Updates folder present: No"
@@ -1275,13 +1275,13 @@ script_config_steam() {
 			fi
 
 			echo "Installing game..."
-			steamcmd +login anonymous +app_info_update 1 +app_info_print $APPID +quit > /srv/$SERVICE_NAME/updates/steam_app_data.txt
+			steamcmd +login anonymous +app_info_update 1 +app_info_print $APPID +quit > $UPDATE_DIR/steam_app_data.txt
 
 			if [[ "$INSTALL_STEAMCMD_BETA_BRANCH" == "0" ]]; then
-				INSTALLED_BUILDID=$(cat /srv/$SERVICE_NAME/updates/steam_app_data.txt | grep -EA 1000 "^\s+\"branches\"$" | grep -EA 5 "^\s+\"public\"$" | grep -m 1 -EB 10 "^\s+}$" | grep -E "^\s+\"buildid\"\s+" | tr '[:blank:]"' ' ' | tr -s ' ' | cut -d' ' -f3)
+				INSTALLED_BUILDID=$(cat $UPDATE_DIR/steam_app_data.txt | grep -EA 1000 "^\s+\"branches\"$" | grep -EA 5 "^\s+\"public\"$" | grep -m 1 -EB 10 "^\s+}$" | grep -E "^\s+\"buildid\"\s+" | tr '[:blank:]"' ' ' | tr -s ' ' | cut -d' ' -f3)
 				echo "$INSTALLED_BUILDID" > $UPDATE_DIR/installed.buildid
 
-				INSTALLED_TIME=$(cat /srv/$SERVICE_NAME/updates/steam_app_data.txt | grep -EA 1000 "^\s+\"branches\"$" | grep -EA 5 "^\s+\"public\"$" | grep -m 1 -EB 10 "^\s+}$" | grep -E "^\s+\"timeupdated\"\s+" | tr '[:blank:]"' ' ' | tr -s ' ' | cut -d' ' -f3)
+				INSTALLED_TIME=$(cat $UPDATE_DIR/steam_app_data.txt | grep -EA 1000 "^\s+\"branches\"$" | grep -EA 5 "^\s+\"public\"$" | grep -m 1 -EB 10 "^\s+}$" | grep -E "^\s+\"timeupdated\"\s+" | tr '[:blank:]"' ' ' | tr -s ' ' | cut -d' ' -f3)
 				echo "$INSTALLED_TIME" > $UPDATE_DIR/installed.timeupdated
 
 				if [[ "$INSTALL_STEAMGUARD_CLI" == "1" ]]; then
@@ -1290,10 +1290,10 @@ script_config_steam() {
 					steamcmd +@sSteamCmdForcePlatformType windows +force_install_dir $SRV_DIR/ +login $INSTALL_STEAMCMD_UID $INSTALL_STEAMCMD_PSW +app_update $APPID validate +quit
 				fi
 			elif [[ "$INSTALL_STEAMCMD_BETA_BRANCH" == "1" ]]; then
-				INSTALLED_BUILDID=$(cat /srv/$SERVICE_NAME/updates/steam_app_data.txt | grep -EA 1000 "^\s+\"branches\"$" | grep -EA 5 "^\s+\"$INSTALL_STEAMCMD_BETA_BRANCH_NAME\"$" | grep -m 1 -EB 10 "^\s+}$" | grep -E "^\s+\"buildid\"\s+" | tr '[:blank:]"' ' ' | tr -s ' ' | cut -d' ' -f3)
+				INSTALLED_BUILDID=$(cat $UPDATE_DIR/steam_app_data.txt | grep -EA 1000 "^\s+\"branches\"$" | grep -EA 5 "^\s+\"$INSTALL_STEAMCMD_BETA_BRANCH_NAME\"$" | grep -m 1 -EB 10 "^\s+}$" | grep -E "^\s+\"buildid\"\s+" | tr '[:blank:]"' ' ' | tr -s ' ' | cut -d' ' -f3)
 				echo "$INSTALLED_BUILDID" > $UPDATE_DIR/installed.buildid
 
-				INSTALLED_TIME=$(cat /srv/$SERVICE_NAME/updates/steam_app_data.txt | grep -EA 1000 "^\s+\"branches\"$" | grep -EA 5 "^\s+\"$INSTALL_STEAMCMD_BETA_BRANCH_NAME\"$" | grep -m 1 -EB 10 "^\s+}$" | grep -E "^\s+\"timeupdated\"\s+" | tr '[:blank:]"' ' ' | tr -s ' ' | cut -d' ' -f3)
+				INSTALLED_TIME=$(cat $UPDATE_DIR/steam_app_data.txt | grep -EA 1000 "^\s+\"branches\"$" | grep -EA 5 "^\s+\"$INSTALL_STEAMCMD_BETA_BRANCH_NAME\"$" | grep -m 1 -EB 10 "^\s+}$" | grep -E "^\s+\"timeupdated\"\s+" | tr '[:blank:]"' ' ' | tr -s ' ' | cut -d' ' -f3)
 				echo "$INSTALLED_TIME" > $UPDATE_DIR/installed.timeupdated
 
 				if [[ "$INSTALL_STEAMGUARD_CLI" == "1" ]]; then
@@ -1322,10 +1322,10 @@ script_config_steam() {
 							echo "Retrying...."
 						fi
 					done
-					ln -s $SRV_DIR/steamapps/workshop/content/$APPID_WORKSHOP/$MOD_ID /srv/$SERVICE_NAME/server/@${MOD_NAME}
+					ln -s $SRV_DIR/steamapps/workshop/content/$APPID_WORKSHOP/$MOD_ID $SRV_DIR/@${MOD_NAME}
 					echo "$AVAILABLE_VERSION_MOD" > $UPDATE_DIR/mods/$MOD_NAME.mod_version
 				done
-				find -L /srv/$SERVICE_NAME/server/@* -name "*.bikey" -exec cp {} /srv/$SERVICE_NAME/server/keys/ \;
+				find -L $SRV_DIR/@* -name "*.bikey" -exec cp {} $SRV_DIR/keys/ \;
 			fi
 
 			mkdir -p "/srv/$SERVICE_NAME/.local/share/Arma 3"
@@ -1678,13 +1678,13 @@ script_config_email() {
 	fi
 
 	echo "Writing configuration file..."
-	echo 'email_sender='"$INSTALL_EMAIL_SENDER" >> /srv/$SERVICE_NAME/config/$SERVICE_NAME-email.conf
-	echo 'email_recipient='"$INSTALL_EMAIL_RECIPIENT" >> /srv/$SERVICE_NAME/config/$SERVICE_NAME-email.conf
-	echo 'email_update='"$INSTALL_EMAIL_UPDATE" >> /srv/$SERVICE_NAME/config/$SERVICE_NAME-email.conf
-	echo 'email_start='"$INSTALL_EMAIL_START" >> /srv/$SERVICE_NAME/config/$SERVICE_NAME-email.conf
-	echo 'email_stop='"$INSTALL_EMAIL_STOP" >> /srv/$SERVICE_NAME/config/$SERVICE_NAME-email.conf
-	echo 'email_crash='"$INSTALL_EMAIL_CRASH" >> /srv/$SERVICE_NAME/config/$SERVICE_NAME-email.conf
-	chown $SERVICE_NAME /srv/$SERVICE_NAME/config/$SERVICE_NAME-email.conf
+	echo 'email_sender='"$INSTALL_EMAIL_SENDER" >> $CONFIG_DIR/$SERVICE_NAME-email.conf
+	echo 'email_recipient='"$INSTALL_EMAIL_RECIPIENT" >> $CONFIG_DIR/$SERVICE_NAME-email.conf
+	echo 'email_update='"$INSTALL_EMAIL_UPDATE" >> $CONFIG_DIR/$SERVICE_NAME-email.conf
+	echo 'email_start='"$INSTALL_EMAIL_START" >> $CONFIG_DIR/$SERVICE_NAME-email.conf
+	echo 'email_stop='"$INSTALL_EMAIL_STOP" >> $CONFIG_DIR/$SERVICE_NAME-email.conf
+	echo 'email_crash='"$INSTALL_EMAIL_CRASH" >> $CONFIG_DIR/$SERVICE_NAME-email.conf
+	chown $SERVICE_NAME $CONFIG_DIR/$SERVICE_NAME-email.conf
 	echo "Done"
 }
 
