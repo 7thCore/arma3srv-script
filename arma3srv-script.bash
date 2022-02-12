@@ -19,105 +19,96 @@
 #Arma 3 server script by 7thCore
 #If you do not know what any of these settings are you are better off leaving them alone. One thing might brake the other if you fiddle around with it.
 
-#Basics
+#Static script variables
 export NAME="Arma3Srv" #Name of the tmux session
-export VERSION="1.0-5" #Package and script version
-
-#Server configuration
+export VERSION="1.0-6" #Package and script version
 export SERVICE_NAME="arma3srv" #Name of the service files, user, script and script log
-SRV_DIR="/srv/$SERVICE_NAME/server" #Location of the server located on your hdd/ssd
-CONFIG_DIR="/srv/$SERVICE_NAME/config" #Location of this script
-UPDATE_DIR="/srv/$SERVICE_NAME/updates" #Location of update information for the script's automatic update feature
-
-#Server configuration
-SERVICE_NAME="arma3srv" #Name of the service files, script and script log
-SERVICE="$SERVICE_NAME.service" #Hdd/ssd service file name
-SRV_DIR="/srv/$SERVICE_NAME/server" #Location of the server located on your hdd/ssd
-CONFIG_DIR="/srv/$SERVICE_NAME/config" #Location of this script
-UPDATE_DIR="/srv/$SERVICE_NAME/updates" #Location of update information for the script's automatic update feature
-
-#Script configuration
-if [ -f "$CONFIG_DIR/$SERVICE_NAME-script.conf" ] ; then
-	BCKP_DELOLD=$(cat $CONFIG_DIR/$SERVICE_NAME-script.conf | grep script_bckp_delold= | cut -d = -f2) #Delete old backups.
-	LOG_DELOLD=$(cat $CONFIG_DIR/$SERVICE_NAME-script.conf | grep script_log_delold= | cut -d = -f2) #Delete old logs.
-	UPDATE_IGNORE_FAILED_ACTIVATIONS=$(cat $CONFIG_DIR/$SERVICE_NAME-script.conf | grep script_update_ignore_failed_startups= | cut -d = -f2) #Ignore failed startups during update configuration
-else
-	BCKP_DELOLD=7
-	LOG_DELOLD=7
-	UPDATE_IGNORE_FAILED_ACTIVATIONS=0
-fi
-
-#Steamcmd configuration
-if [ -f "$CONFIG_DIR/$SERVICE_NAME-steam.conf" ] ; then
-	STEAMCMD_UID=$(cat $CONFIG_DIR/$SERVICE_NAME-steam.conf | grep steamcmd_username= | cut -d = -f2) #Your steam username
-	STEAMCMD_PSW=$(cat $CONFIG_DIR/$SERVICE_NAME-steam.conf | grep steamcmd_password= | cut -d = -f2) #Your steam password
-	STEAMCMD_BETA_BRANCH=$(cat $CONFIG_DIR/$SERVICE_NAME-steam.conf | grep steamcmd_beta_branch= | cut -d = -f2) #Beta branch enabled?
-	STEAMCMD_STEAMCMD_BETA_BRANCH_NAME=$(cat $CONFIG_DIR/$SERVICE_NAME-steam.conf | grep steamcmd_beta_branch_name= | cut -d = -f2) #Beta branch name
-	STEAMGUARD_CLI=$(cat $CONFIG_DIR/$SERVICE_NAME-steam.conf | grep steamguard_cli= | cut -d = -f2) #If you have a steamguard application present and configured
-else
-	STEAMCMD_UID="disabled"
-	STEAMCMD_PSW="disabled"
-	STEAMCMD_BETA_BRANCH="0"
-	STEAMCMD_STEAMCMD_BETA_BRANCH_NAME="0"
-	STEAMGUARD_CLI="0"
-fi
-
-#Discord configuration
-if [ -f "$CONFIG_DIR/$SERVICE_NAME-discord.conf" ] ; then
-	DISCORD_UPDATE=$(cat $CONFIG_DIR/$SERVICE_NAME-discord.conf | grep discord_update= | cut -d = -f2) #Send notification when the server updates
-	DISCORD_START=$(cat $CONFIG_DIR/$SERVICE_NAME-discord.conf | grep discord_start= | cut -d = -f2) #Send notifications when the server starts
-	DISCORD_STOP=$(cat $CONFIG_DIR/$SERVICE_NAME-discord.conf | grep discord_stop= | cut -d = -f2) #Send notifications when the server stops
-	DISCORD_CRASH=$(cat $CONFIG_DIR/$SERVICE_NAME-discord.conf | grep discord_crash= | cut -d = -f2) #Send notifications when the server crashes
-else
-	DISCORD_UPDATE="0"
-	DISCORD_START="0"
-	DISCORD_STOP="0"
-	DISCORD_CRASH="0"
-fi
-
-#Email configuration
-if [ -f "$CONFIG_DIR/$SERVICE_NAME-email.conf" ] ; then
-	EMAIL_SENDER=$(cat $CONFIG_DIR/$SERVICE_NAME-email.conf | grep email_sender= | cut -d = -f2) #Send emails from this address
-	EMAIL_RECIPIENT=$(cat $CONFIG_DIR/$SERVICE_NAME-email.conf | grep email_recipient= | cut -d = -f2) #Send emails to this address
-	EMAIL_UPDATE=$(cat $CONFIG_DIR/$SERVICE_NAME-email.conf | grep email_update= | cut -d = -f2) #Send emails when server updates
-	EMAIL_START=$(cat $CONFIG_DIR/$SERVICE_NAME-email.conf | grep email_start= | cut -d = -f2) #Send emails when the server starts up
-	EMAIL_STOP=$(cat $CONFIG_DIR/$SERVICE_NAME-email.conf | grep email_stop= | cut -d = -f2) #Send emails when the server shuts down
-	EMAIL_CRASH=$(cat $CONFIG_DIR/$SERVICE_NAME-email.conf | grep email_crash= | cut -d = -f2) #Send emails when the server crashes
-else
-	EMAIL_SENDER="0"
-	EMAIL_RECIPIENT="0"
-	EMAIL_UPDATE="0"
-	EMAIL_START="0"
-	EMAIL_STOP="0"
-	EMAIL_CRASH="0"
-fi
-
-#Mod configuration
-if [ -f "$CONFIG_DIR/$SERVICE_NAME-mods.conf" ] ; then
-	MODS_ENABLED=$(cat $SCRIPT_DIR/$SERVICE_NAME-config.conf | grep mods_enabled= | cut -d = -f2) #Are mods enabled?
-	MODS=$(cat $SCRIPT_DIR/$SERVICE_NAME-config.conf | grep mod_list | cut -d = -f2) #Get mod list
-else
-	MODS_ENABLED="0"
-	MODS="0"
-fi
-
-#App id of the steam game
-APPID="233780"
-WORKSHOP_APPID="107410"
-
-#Backup configuration
-BCKP_SRC="Arma*" #What files to backup, * for all
-BCKP_SRC_DIR="/srv/$SERVICE_NAME/.local/share" #Application data of the hdd/ssd
+export LOG_DIR="/srv/$SERVICE_NAME/logs" #Location of the script's log files.
+export LOG_STRUCTURE="$LOG_DIR/$(date +"%Y")/$(date +"%m")/$(date +"%d")" #Folder structure of the script's log files.
+export LOG_SCRIPT="$LOG_STRUCTURE/$SERVICE_NAME-script.log" #Script log.
+SRV_DIR="/srv/$SERVICE_NAME/server" #Location of the server located on your hdd/ssd.
+CONFIG_DIR="/srv/$SERVICE_NAME/config" #Location of this script's configuration.
+UPDATE_DIR="/srv/$SERVICE_NAME/updates" #Location of update information for the script's automatic update feature.
 BCKP_DIR="/srv/$SERVICE_NAME/backups" #Location of stored backups
-BCKP_DEST="$BCKP_DIR/$(date +"%Y")/$(date +"%m")/$(date +"%d")" #How backups are sorted, by default it's sorted in folders by month and day
+BCKP_STRUCTURE="$(date +"%Y")/$(date +"%m")/$(date +"%d")" #How backups are sorted, by default it's sorted in folders by month and day.
 
-#Log configuration
-export LOG_DIR="/srv/$SERVICE_NAME/logs/$(date +"%Y")/$(date +"%m")/$(date +"%d")"
-export LOG_DIR_ALL="/srv/$SERVICE_NAME/logs"
-export LOG_SCRIPT="$LOG_DIR/$SERVICE_NAME-script.log" #Script log
-export CRASH_DIR="/srv/$SERVICE_NAME/logs/crashes/$(date +"%Y-%m-%d_%H-%M")"
+#Static game variables
+APPID="233780" #Steam app id for the server
+WORKSHOP_APPID="107410" #Steam app id for the workshop
 
-#-------Do not edit anything beyond this line-------
+#Script config file variables
+BCKP_DELOLD=$(cat $CONFIG_DIR/$SERVICE_NAME-script.conf 2> /dev/null | grep script_bckp_delold= | cut -d = -f2) #Delete old backups.
+LOG_DELOLD=$(cat $CONFIG_DIR/$SERVICE_NAME-script.conf 2> /dev/null | grep script_log_delold= | cut -d = -f2) #Delete old logs.
+UPDATE_IGNORE_FAILED_ACTIVATIONS=$(cat $CONFIG_DIR/$SERVICE_NAME-script.conf 2> /dev/null | grep script_update_ignore_failed_startups= | cut -d = -f2) #Ignore failed startups during update configuration
+
+#Script config variables if config doesn't exist
+BCKP_DELOLD=${BCKP_DELOLD:="7"} #If the variable for old backup deletion is not defined, assign a default value.
+LOG_DELOLD=${LOG_DELOLD:="7"} #If the variable for old log deletion is not defined, assign a default value.
+UPDATE_IGNORE_FAILED_ACTIVATIONS=$(cat $CONFIG_DIR/$SERVICE_NAME-script.conf 2> /dev/null | grep script_update_ignore_failed_startups= | cut -d = -f2) #Defines if errors during startup after updates should be ignored.
+
+#Steamcmd config file variables
+STEAMCMD_UID=$(cat $CONFIG_DIR/$SERVICE_NAME-steam.conf 2> /dev/null | grep steamcmd_username= | cut -d = -f2) #Defines your steam username.
+STEAMCMD_PSW=$(cat $CONFIG_DIR/$SERVICE_NAME-steam.conf 2> /dev/null | grep steamcmd_password= | cut -d = -f2) #Defines your steam password.
+STEAMCMD_BETA_BRANCH=$(cat $CONFIG_DIR/$SERVICE_NAME-steam.conf 2> /dev/null | grep steamcmd_beta_branch= | cut -d = -f2) #Defines if the beta branch is enabled.
+STEAMCMD_BETA_BRANCH_NAME=$(cat $CONFIG_DIR/$SERVICE_NAME-steam.conf 2> /dev/null | grep steamcmd_beta_branch_name= | cut -d = -f2) #Defines the beta branch name.
+STEAMGUARD_CLI=$(cat $CONFIG_DIR/$SERVICE_NAME-steam.conf 2> /dev/null | grep steamguard_cli= | cut -d = -f2) #Defines usage of steamguard_cli.
+
+#Steamcmd config variables if config doesn't exist
+STEAMCMD_UID=${STEAMCMD_UID:="disabled"} #If the variable for steam username is not defined, assign a default value.
+STEAMCMD_PSW=${STEAMCMD_PSW:="disabled"} #If the variable for steam password is not defined, assign a default value.
+STEAMCMD_BETA_BRANCH=${STEAMCMD_BETA_BRANCH:="0"} #If the variable for steam beta branch selection is not defined, assign a default value.
+STEAMCMD_BETA_BRANCH_NAME=${STEAMCMD_BETA_BRANCH_NAME:="none"} #If the variable for steam beta branch name is not defined, assign a default value.
+STEAMGUARD_CLI=${STEAMGUARD_CLI:="0"} #If the variable for steam guard is not defined, assign a default value.
+
+#Mod config file variables
+MODS_ENABLED=$(cat $SCRIPT_DIR/$SERVICE_NAME-mods.conf 2> /dev/null | grep mods_enabled= | cut -d = -f2) #Are mods enabled?
+MODS=$(cat $SCRIPT_DIR/$SERVICE_NAME-mods.conf 2> /dev/null | grep mod_list | cut -d = -f2) #Get mod list
+
+#Mod config variables if config doesn't exist
+MODS_ENABLED=${MODS_ENABLED:="0"} #If the variable for steam username is not defined, assign a default value.
+MODS=${MODS:="0"} #If the variable for steam username is not defined, assign a default value.
+
+#Discord config file variables
+DISCORD_UPDATE=$(cat $CONFIG_DIR/$SERVICE_NAME-discord.conf 2> /dev/null | grep discord_update= | cut -d = -f2) #Send notification when the server updates.
+DISCORD_START=$(cat $CONFIG_DIR/$SERVICE_NAME-discord.conf 2> /dev/null | grep discord_start= | cut -d = -f2) #Send notifications when the server starts.
+DISCORD_STOP=$(cat $CONFIG_DIR/$SERVICE_NAME-discord.conf 2> /dev/null | grep discord_stop= | cut -d = -f2) #Send notifications when the server stops.
+DISCORD_CRASH=$(cat $CONFIG_DIR/$SERVICE_NAME-discord.conf 2> /dev/null | grep discord_crash= | cut -d = -f2) #Send notifications when the server crashes.
+DISCORD_TMPFS_SPACE=$(cat $CONFIG_DIR/$SERVICE_NAME-discord.conf 2> /dev/null | grep discord_tmpfs_space= | cut -d = -f2) #Send notifications if tmpfs space is over the designated percentage.
+DISCORD_COLOR_PRESTART=$(cat $CONFIG_DIR/$SERVICE_NAME-discord.conf 2> /dev/null | grep discord_color_prestart= | cut -d = -f2) #Discord embed color for prestart.
+DISCORD_COLOR_POSTSTART=$(cat $CONFIG_DIR/$SERVICE_NAME-discord.conf 2> /dev/null | grep discord_color_poststart= | cut -d = -f2) #Discord embed color for poststart.
+DISCORD_COLOR_PRESTOP=$(cat $CONFIG_DIR/$SERVICE_NAME-discord.conf 2> /dev/null | grep discord_color_prestop= | cut -d = -f2) #Discord embed color for prestop.
+DISCORD_COLOR_POSTSTOP=$(cat $CONFIG_DIR/$SERVICE_NAME-discord.conf 2> /dev/null | grep discord_color_poststop= | cut -d = -f2) #Discord embed color for poststop.
+DISCORD_COLOR_UPDATE=$(cat $CONFIG_DIR/$SERVICE_NAME-discord.conf 2> /dev/null | grep discord_color_update= | cut -d = -f2) #Discord embed color for update.
+DISCORD_COLOR_CRASH=$(cat $CONFIG_DIR/$SERVICE_NAME-discord.conf 2> /dev/null | grep discord_color_crash= | cut -d = -f2) #Discord embed color for crash.
+
+#Discord config variables if config doesn't exist
+DISCORD_UPDATE=${DISCORD_UPDATE:="0"} #If the variable for discord update is not defined, assign a default value.
+DISCORD_START=${DISCORD_START:="0"} #If the variable for discord start is not defined, assign a default value.
+DISCORD_STOP=${DISCORD_STOP:="0"} #If the variable for discord stop is not defined, assign a default value.
+DISCORD_CRASH=${DISCORD_CRASH:="0"} #If the variable for discord crash is not defined, assign a default value.
+DISCORD_TMPFS_SPACE=${DISCORD_TMPFS_SPACE:="0"} #If the variable for discord tmpfs space is not defined, assign a default value.
+DISCORD_COLOR_PRESTART=${DISCORD_COLOR_PRESTART:="16776960"} #If the variable discord pre-start color is not defined, assign a default value.
+DISCORD_COLOR_POSTSTART=${DISCORD_COLOR_POSTSTART:="65280"} #If the variable discord post-start color is not defined, assign a default value.
+DISCORD_COLOR_PRESTOP=${DISCORD_COLOR_PRESTOP:="16776960"} #If the variable discord pre-stop color is not defined, assign a default value.
+DISCORD_COLOR_POSTSTOP=${DISCORD_COLOR_POSTSTOP:="65280"} #If the variable discord post-stop color is not defined, assign a default value.
+DISCORD_COLOR_UPDATE=${DISCORD_COLOR_UPDATE:="47083"} #If the variable discord update color is not defined, assign a default value.
+DISCORD_COLOR_CRASH=${DISCORD_COLOR_CRASH:="16711680"} #If the variable for discord crash color is not defined, assign a default value.
+
+#Email config file variables
+EMAIL_SENDER=$(cat $CONFIG_DIR/$SERVICE_NAME-email.conf 2> /dev/null | grep email_sender= | cut -d = -f2) #Send emails from this address.
+EMAIL_RECIPIENT=$(cat $CONFIG_DIR/$SERVICE_NAME-email.conf 2> /dev/null | grep email_recipient= | cut -d = -f2) #Send emails to this address.
+EMAIL_UPDATE=$(cat $CONFIG_DIR/$SERVICE_NAME-email.conf 2> /dev/null | grep email_update= | cut -d = -f2) #Send emails when server updates.
+EMAIL_START=$(cat $CONFIG_DIR/$SERVICE_NAME-email.conf 2> /dev/null | grep email_start= | cut -d = -f2) #Send emails when the server starts up.
+EMAIL_STOP=$(cat $CONFIG_DIR/$SERVICE_NAME-email.conf 2> /dev/null | grep email_stop= | cut -d = -f2) #Send emails when the server shuts down.
+EMAIL_CRASH=$(cat $CONFIG_DIR/$SERVICE_NAME-email.conf 2> /dev/null | grep email_crash= | cut -d = -f2) #Send emails when the server crashes.
+
+#Email config variables if config doesn't exist
+EMAIL_SENDER=${EMAIL_SENDER:="none"} #If the variable for email sender is not defined, assign a default value.
+EMAIL_RECIPIENT=${EMAIL_RECIPIENT:="none"} #If the variable for email recipient is not defined, assign a default value.
+EMAIL_UPDATE=${EMAIL_UPDATE:="0"} #If the variable for email update is not defined, assign a default value.
+EMAIL_START=${EMAIL_START:="0"} #If the variable for email start is not defined, assign a default value.
+EMAIL_STOP=${EMAIL_STOP:="0"} #If the variable for email stop is not defined, assign a default value.
+EMAIL_CRASH=${EMAIL_CRASH:="0"} #If the variable for email crash is not defined, assign a default value.
 
 #Console collors
 RED='\033[0;31m'
@@ -126,17 +117,49 @@ CYAN='\033[0;36m'
 LIGHTRED='\033[1;31m'
 NC='\033[0m'
 
-#---------------------------
+#-------Do not edit anything beyond this line-------
 
 #Generate log folder structure
 script_logs() {
 	#If there is not a folder for today, create one
-	if [ ! -d "$LOG_DIR" ]; then
-		mkdir -p $LOG_DIR
+	if [ ! -d "$LOG_STRUCTURE" ]; then
+		mkdir -p $LOG_STRUCTURE
 	fi
 }
 
 #---------------------------
+
+#Discord webhook message send
+script_discord_message() {
+		while IFS="" read -r DISCORD_WEBHOOK || [ -n "$DISCORD_WEBHOOK" ]; do
+			curl -H "Content-Type: application/json" -X POST -d "{\"embeds\": [{ \"author\": { \"name\": \"$NAME Script\", \"url\": \"https://github.com/7thCore/$SERVICE_NAME-script\" }, \"color\": \"$1\", \"description\": \"$2\", \"footer\": {\"text\": \"Version $VERSION\"}, \"timestamp\": \"$(date -u --iso-8601=seconds)\"}] }" "$DISCORD_WEBHOOK"
+		done < $CONFIG_DIR/discord_webhooks.txt
+}
+
+#--------------------------
+
+#Send email message
+script_email_message() {
+	mail -r "$EMAIL_SENDER ($1)" -s "$2" $EMAIL_RECIPIENT <<- EOF
+	$3
+	EOF
+
+#--------------------------
+
+#Attaches to the server tmux session
+script_attach() {
+	script_logs
+	tmux -L $SERVICE_NAME-tmux.sock has-session -t $NAME 2>/dev/null
+	if [ $? == 0 ]; then
+		echo "$(date +"%Y-%m-%d %H:%M:%S") [$VERSION] [$NAME] [INFO] (Attach) User attached to server session with ID: $1" | tee -a "$LOG_SCRIPT"
+		tmux -L $SERVICE_NAME-tmux.sock attach -t $NAME
+		echo "$(date +"%Y-%m-%d %H:%M:%S") [$VERSION] [$NAME] [INFO] (Attach) User deattached from server session with ID: $1" | tee -a "$LOG_SCRIPT"
+	else
+		echo "$(date +"%Y-%m-%d %H:%M:%S") [$VERSION] [$NAME] [INFO] (Attach) Failed to attach to server session with ID: $1" | tee -a "$LOG_SCRIPT"
+	fi
+}
+
+#--------------------------
 
 #Deletes old files
 script_remove_old_files() {
@@ -144,10 +167,10 @@ script_remove_old_files() {
 	echo "$(date +"%Y-%m-%d %H:%M:%S") [$VERSION] [$NAME] [INFO] (Remove old files) Beginning removal of old files." | tee -a "$LOG_SCRIPT"
 	#Delete old logs
 	echo "$(date +"%Y-%m-%d %H:%M:%S") [$VERSION] [$NAME] [INFO] (Remove old files) Removing old script logs: $LOG_DELOLD days old." | tee -a "$LOG_SCRIPT"
-	find $LOG_DIR_ALL/* -mtime +$LOG_DELOLD -delete
+	find $LOG_DIR/* -mtime +$LOG_DELOLD -delete
 	#Delete empty folders
 	echo "$(date +"%Y-%m-%d %H:%M:%S") [$VERSION] [$NAME] [INFO] (Remove old files) Removing empty script log folders." | tee -a "$LOG_SCRIPT"
-	find $LOG_DIR_ALL/ -type d -empty -delete
+	find $LOG_DIR/ -type d -empty -delete
 	echo "$(date +"%Y-%m-%d %H:%M:%S") [$VERSION] [$NAME] [INFO] (Remove old files) Removal of old files complete." | tee -a "$LOG_SCRIPT"
 }
 
@@ -167,14 +190,6 @@ script_status() {
 	elif [[ "$(systemctl --user show -p ActiveState --value $SERVICE)" == "deactivating" ]]; then
 		echo "$(date +"%Y-%m-%d %H:%M:%S") [$VERSION] [$NAME] [INFO] (Status) Server is in deactivating. Please wait." | tee -a "$LOG_SCRIPT"
 	fi
-}
-
-#---------------------------
-
-#Attaches to the server tmux session
-script_attach() {
-	script_logs
-	tmux -L $SERVICE_NAME-tmux.sock attach -t $NAME
 }
 
 #---------------------------
@@ -261,15 +276,11 @@ script_reload_services() {
 #Pre-start functions to be called by the systemd service
 script_prestart() {
 	script_logs
-	if [[ "$EMAIL_START" == "1" ]]; then
-		mail -r "$EMAIL_SENDER ($NAME)" -s "Notification: Server startup" $EMAIL_RECIPIENT <<- EOF
-		Server startup was initialized at $(date +"%d.%m.%Y %H:%M:%S")
-		EOF
-	fi
 	if [[ "$DISCORD_START" == "1" ]]; then
-		while IFS="" read -r DISCORD_WEBHOOK || [ -n "$DISCORD_WEBHOOK" ]; do
-			curl -H "Content-Type: application/json" -X POST -d "{\"content\": \"$(date +"%Y-%m-%d %H:%M:%S") [$VERSION] [$NAME] [INFO] (Start) Server startup was initialized.\"}" "$DISCORD_WEBHOOK"
-		done < $CONFIG_DIR/discord_webhooks.txt
+		script_discord_message "$DISCORD_COLOR_PRESTART" "Server startup for $1 was initialized."
+	fi
+	if [[ "$EMAIL_START" == "1" ]]; then
+		script_email_message "$NAME-$1" "Notification: Server startup $1" "Server startup for $1 was initialized at $(date +"%d.%m.%Y %H:%M:%S")"
 	fi
 	echo "$(date +"%Y-%m-%d %H:%M:%S") [$VERSION] [$NAME] [INFO] (Start) Server startup was initialized." | tee -a "$LOG_SCRIPT"
 }
@@ -279,15 +290,11 @@ script_prestart() {
 #Post-start functions to be called by the systemd service
 script_poststart() {
 	script_logs
-	if [[ "$EMAIL_START" == "1" ]]; then
-		mail -r "$EMAIL_SENDER ($NAME)" -s "Notification: Server startup" $EMAIL_RECIPIENT <<- EOF
-		Server startup was completed at $(date +"%d.%m.%Y %H:%M:%S")
-		EOF
-	fi
 	if [[ "$DISCORD_START" == "1" ]]; then
-		while IFS="" read -r DISCORD_WEBHOOK || [ -n "$DISCORD_WEBHOOK" ]; do
-			curl -H "Content-Type: application/json" -X POST -d "{\"content\": \"$(date +"%Y-%m-%d %H:%M:%S") [$VERSION] [$NAME] [INFO] (Start) Server startup complete.\"}" "$DISCORD_WEBHOOK"
-		done < $CONFIG_DIR/discord_webhooks.txt
+		script_discord_message "$DISCORD_COLOR_POSTSTART" "Server startup for $1 complete."
+	fi
+	if [[ "$EMAIL_START" == "1" ]]; then
+		script_email_message "$NAME-$1" "Notification: Server startup $1" "Server startup for $1 was completed at $(date +"%d.%m.%Y %H:%M:%S")"
 	fi
 	echo "$(date +"%Y-%m-%d %H:%M:%S") [$VERSION] [$NAME] [INFO] (Start) Server startup complete." | tee -a "$LOG_SCRIPT"
 }
@@ -297,15 +304,11 @@ script_poststart() {
 #Pre-stop functions to be called by the systemd service
 script_prestop() {
 	script_logs
-	if [[ "$EMAIL_STOP" == "1" ]]; then
-		mail -r "$EMAIL_SENDER ($NAME)" -s "Notification: Server shutdown" $EMAIL_RECIPIENT <<- EOF
-		Server shutdown was initiated at $(date +"%d.%m.%Y %H:%M:%S")
-		EOF
-	fi
 	if [[ "$DISCORD_STOP" == "1" ]]; then
-		while IFS="" read -r DISCORD_WEBHOOK || [ -n "$DISCORD_WEBHOOK" ]; do
-			curl -H "Content-Type: application/json" -X POST -d "{\"content\": \"$(date +"%Y-%m-%d %H:%M:%S") [$VERSION] [$NAME] [INFO] (Stop) Server shutdown was initialized.\"}" "$DISCORD_WEBHOOK"
-		done < $CONFIG_DIR/discord_webhooks.txt
+		script_discord_message "$DISCORD_COLOR_PRESTOP" "Server shutdown for $1 was initialized."
+	fi
+	if [[ "$EMAIL_STOP" == "1" ]]; then
+		script_email_message "$NAME-$1" "Notification: Server shutdown $1" "Server shutdown was initiated at $(date +"%d.%m.%Y %H:%M:%S")"
 	fi
 	echo "$(date +"%Y-%m-%d %H:%M:%S") [$VERSION] [$NAME] [INFO] (Stop) Server shutdown was initialized." | tee -a "$LOG_SCRIPT"
 }
@@ -333,53 +336,13 @@ script_poststop() {
 		rm /tmp/$SERVICE_NAME-tmux.conf
 	fi
 
-	if [[ "$EMAIL_STOP" == "1" ]]; then
-		mail -r "$EMAIL_SENDER ($NAME)" -s "Notification: Server shutdown" $EMAIL_RECIPIENT <<- EOF
-		Server shutdown was complete at $(date +"%d.%m.%Y %H:%M:%S")
-		EOF
-	fi
 	if [[ "$DISCORD_STOP" == "1" ]]; then
-		while IFS="" read -r DISCORD_WEBHOOK || [ -n "$DISCORD_WEBHOOK" ]; do
-			curl -H "Content-Type: application/json" -X POST -d "{\"content\": \"$(date +"%Y-%m-%d %H:%M:%S") [$VERSION] [$NAME] [INFO] (Stop) Server shutdown complete.\"}" "$DISCORD_WEBHOOK"
-		done < $CONFIG_DIR/discord_webhooks.txt
+		script_discord_message "$DISCORD_COLOR_POSTSTOP" "Server shutdown for $1 complete."
+	fi
+	if [[ "$EMAIL_STOP" == "1" ]]; then
+		script_email_message "$NAME-$1" "Notification: Server shutdown $1" "Server shutdown was complete at $(date +"%d.%m.%Y %H:%M:%S")"
 	fi
 	echo "$(date +"%Y-%m-%d %H:%M:%S") [$VERSION] [$NAME] [INFO] (Stop) Server shutdown complete." | tee -a "$LOG_SCRIPT"
-}
-
-#---------------------------
-
-#Systemd service sends email if email notifications for crashes enabled
-script_send_notification_crash() {
-	script_logs
-	if [ ! -d "$CRASH_DIR" ]; then
-		mkdir -p "$CRASH_DIR"
-	fi
-	
-	systemctl --user status $SERVICE > $CRASH_DIR/service_log.txt
-	zip -j $CRASH_DIR/service_logs.zip $CRASH_DIR/service_log.txt
-	zip -j $CRASH_DIR/script_logs.zip $LOG_SCRIPT
-	rm $CRASH_DIR/service_log.txt
-	
-	if [[ "$EMAIL_CRASH" == "1" ]]; then
-		mail -a $CRASH_DIR/service_logs.zip -a $CRASH_DIR/script_logs.zip -r "$EMAIL_SENDER ($NAME-$SERVICE_NAME)" -s "Notification: Crash" $EMAIL_RECIPIENT <<- EOF
-		The server crashed 3 times in the last 5 minutes. Automatic restart is disabled and the server is inactive. Please check the logs for more information.
-		
-		Attachment contents:
-		service_logs.zip - Logs from the systemd service
-		script_logs.zip - Logs from the script
-		
-		DO NOT SEND ANY OF THESE TO THE DEVS!
-		
-		Contact the script developer 7thCore on discord for help regarding any problems the script may have caused.
-		EOF
-	fi
-	
-	if [[ "$DISCORD_CRASH" == "1" ]]; then
-		while IFS="" read -r DISCORD_WEBHOOK || [ -n "$DISCORD_WEBHOOK" ]; do
-			curl -H "Content-Type: application/json" -X POST -d "{\"content\": \"$(date +"%Y-%m-%d %H:%M:%S") [$VERSION] [$NAME] [INFO] (Crash) The server crashed 3 times in the last 5 minutes. Automatic restart is disabled and the server is inactive. Please review your logs located in $CRASH_DIR.\"}" "$DISCORD_WEBHOOK"
-		done < $SCRIPT_DIR/discord_webhooks.txt
-	fi
-	echo "$(date +"%Y-%m-%d %H:%M:%S") [$VERSION] [$NAME] [INFO] (Crash) Server crashed. Please review your logs located in $CRASH_DIR." | tee -a "$LOG_SCRIPT"
 }
 
 #---------------------------
@@ -387,10 +350,9 @@ script_send_notification_crash() {
 #Start the server
 script_start() {
 	script_logs
-	if [[ "$(systemctl --user show -p ActiveState --value $SERVICE)" == "inactive" ]]; then
-		echo "$(date +"%Y-%m-%d %H:%M:%S") [$VERSION] [$NAME] [INFO] (Start) Server start initialized." | tee -a "$LOG_SCRIPT"
-		systemctl --user start $SERVICE
-		sleep 1
+
+	#Loop until the server is active and output the state of it
+	script_start_loop() {
 		while [[ "$(systemctl --user show -p ActiveState --value $SERVICE)" == "activating" ]]; do
 			echo "$(date +"%Y-%m-%d %H:%M:%S") [$VERSION] [$NAME] [INFO] (Start) Server is activating. Please wait..." | tee -a "$LOG_SCRIPT"
 			sleep 1
@@ -402,70 +364,31 @@ script_start() {
 			echo "$(date +"%Y-%m-%d %H:%M:%S") [$VERSION] [$NAME] [INFO] (Start) Server failed to activate. See systemctl --user status $SERVICE for details." | tee -a "$LOG_SCRIPT"
 			sleep 1
 		fi
+	}
+
+	if [[ "$(systemctl --user show -p ActiveState --value $SERVICE)" == "inactive" ]]; then
+		echo "$(date +"%Y-%m-%d %H:%M:%S") [$VERSION] [$NAME] [INFO] (Start) Server start initialized." | tee -a "$LOG_SCRIPT"
+		systemctl --user start $SERVICE
+		script_start_loop
 	elif [[ "$(systemctl --user show -p ActiveState --value $SERVICE)" == "active" ]]; then
 		echo "$(date +"%Y-%m-%d %H:%M:%S") [$VERSION] [$NAME] [INFO] (Start) Server is already running." | tee -a "$LOG_SCRIPT"
 		sleep 1
 	elif [[ "$(systemctl --user show -p ActiveState --value $SERVICE)" == "failed" ]]; then
 		echo "$(date +"%Y-%m-%d %H:%M:%S") [$VERSION] [$NAME] [INFO] (Start) Server is in failed state. See systemctl --user status $SERVICE for details." | tee -a "$LOG_SCRIPT"
-		read -p "Do you still want to start the server? (y/n): " FORCE_START
-		if [[ "$FORCE_START" =~ ^([yY][eE][sS]|[yY])$ ]]; then
-			systemctl --user start $SERVICE
-			sleep 1
-			while [[ "$(systemctl --user show -p ActiveState --value $SERVICE)" == "activating" ]]; do
-				echo "$(date +"%Y-%m-%d %H:%M:%S") [$VERSION] [$NAME] [INFO] (Start) Server is activating. Please wait..." | tee -a "$LOG_SCRIPT"
-				sleep 1
-			done
-			if [[ "$(systemctl --user show -p ActiveState --value $SERVICE)" == "active" ]]; then
-				echo "$(date +"%Y-%m-%d %H:%M:%S") [$VERSION] [$NAME] [INFO] (Start) Server has been successfully activated." | tee -a "$LOG_SCRIPT"
-				sleep 1
-			elif [[ "$(systemctl --user show -p ActiveState --value $SERVICE)" == "failed" ]]; then
-				echo "$(date +"%Y-%m-%d %H:%M:%S") [$VERSION] [$NAME] [INFO] (Start) Server failed to activate. See systemctl --user status $SERVICE for details." | tee -a "$LOG_SCRIPT"
-				sleep 1
+		if [[ "$1" == "ignore" ]]; then
+			systemctl --user start $SERVER_SERVICE
+			script_start_loop $SERVER_SERVICE
+		else
+			read -p "Do you still want to start the server? (y/n): " FORCE_START
+			if [[ "$FORCE_START" =~ ^([yY][eE][sS]|[yY])$ ]]; then
+				systemctl --user start $SERVER_SERVICE
+				script_start_loop $SERVER_SERVICE
 			fi
 		fi
 	fi
 }
 
 #---------------------------
-
-#Start the server ignorring failed states
-script_start_ignore_errors() {
-	script_logs
-	if [[ "$(systemctl --user show -p ActiveState --value $SERVICE)" == "inactive" ]]; then
-		echo "$(date +"%Y-%m-%d %H:%M:%S") [$VERSION] [$NAME] [INFO] (Start) Server start initialized." | tee -a "$LOG_SCRIPT"
-		systemctl --user start $SERVICE
-		sleep 1
-		while [[ "$(systemctl --user show -p ActiveState --value $SERVICE)" == "activating" ]]; do
-			echo "$(date +"%Y-%m-%d %H:%M:%S") [$VERSION] [$NAME] [INFO] (Start) Server is activating. Please wait..." | tee -a "$LOG_SCRIPT"
-			sleep 1
-		done
-		if [[ "$(systemctl --user show -p ActiveState --value $SERVICE)" == "active" ]]; then
-			echo "$(date +"%Y-%m-%d %H:%M:%S") [$VERSION] [$NAME] [INFO] (Start) Server has been successfully activated." | tee -a "$LOG_SCRIPT"
-			sleep 1
-		elif [[ "$(systemctl --user show -p ActiveState --value $SERVICE)" == "failed" ]]; then
-			echo "$(date +"%Y-%m-%d %H:%M:%S") [$VERSION] [$NAME] [INFO] (Start) Server failed to activate. See systemctl --user status $SERVICE for details." | tee -a "$LOG_SCRIPT"
-			sleep 1
-		fi
-	elif [[ "$(systemctl --user show -p ActiveState --value $SERVICE)" == "active" ]]; then
-		echo "$(date +"%Y-%m-%d %H:%M:%S") [$VERSION] [$NAME] [INFO] (Start) Server is already running." | tee -a "$LOG_SCRIPT"
-		sleep 1
-	elif [[ "$(systemctl --user show -p ActiveState --value $SERVICE)" == "failed" ]]; then
-		echo "$(date +"%Y-%m-%d %H:%M:%S") [$VERSION] [$NAME] [INFO] (Start) Server is in failed state. See systemctl --user status $SERVICE for details." | tee -a "$LOG_SCRIPT"
-		systemctl --user start $SERVICE
-		sleep 1
-		while [[ "$(systemctl --user show -p ActiveState --value $SERVICE)" == "activating" ]]; do
-			echo "$(date +"%Y-%m-%d %H:%M:%S") [$VERSION] [$NAME] [INFO] (Start) Server is activating. Please wait..." | tee -a "$LOG_SCRIPT"
-			sleep 1
-		done
-		if [[ "$(systemctl --user show -p ActiveState --value $SERVICE)" == "active" ]]; then
-			echo "$(date +"%Y-%m-%d %H:%M:%S") [$VERSION] [$NAME] [INFO] (Start) Server has been successfully activated." | tee -a "$LOG_SCRIPT"
-			sleep 1
-		elif [[ "$(systemctl --user show -p ActiveState --value $SERVICE)" == "failed" ]]; then
-			echo "$(date +"%Y-%m-%d %H:%M:%S") [$VERSION] [$NAME] [INFO] (Start) Server failed to activate. See systemctl --user status $SERVICE for details." | tee -a "$LOG_SCRIPT"
-			sleep 1
-		fi
-	fi
-}
 
 #Stop the server
 script_stop() {
@@ -506,174 +429,161 @@ script_restart() {
 	fi
 }
 
-#Deletes old backups
-script_deloldbackup() {
-	script_logs
-	echo "$(date +"%Y-%m-%d %H:%M:%S") [$VERSION] [$NAME] [INFO] (Delete old backup) Deleting old backups: $BCKP_DELOLD days old." | tee -a "$LOG_SCRIPT"
-	# Delete old backups
-	find $BCKP_DIR/* -type f -mtime +$BCKP_DELOLD -exec rm {} \;
-	# Delete empty folders
-	#find $BCKP_DIR/ -type d 2> /dev/null -empty -exec rm -rf {} \;
-	find $BCKP_DIR/ -type d -empty -delete
-	echo "$(date +"%Y-%m-%d %H:%M:%S") [$VERSION] [$NAME] [INFO] (Delete old backup) Deleting old backups complete." | tee -a "$LOG_SCRIPT"
-}
-
 #---------------------------
 
-#Backs up the server
+#Systemd service sends email if email notifications for crashes enabled
+script_send_notification_crash() {
+	script_logs
+	if [ ! -d "$CRASH_DIR" ]; then
+		mkdir -p "$CRASH_DIR"
+	fi
+
+	systemctl --user status $SERVICE > $CRASH_DIR/service_log.txt
+	zip -j $CRASH_DIR/service_logs.zip $CRASH_DIR/service_log.txt
+	zip -j $CRASH_DIR/script_logs.zip $LOG_SCRIPT
+	rm $CRASH_DIR/service_log.txt
+
+	if [[ "$DISCORD_CRASH" == "1" ]]; then
+		script_discord_message "$DISCORD_COLOR_CRASH" "Server crashed 3 times in the last 5 minutes.\nAutomatic restart is disabled and the server is inactive.\n\nPlease review your logs located in $LOG_STRUCTURE/Server-crash_$CRASH_TIME."
+	fi
+
+	if [[ "$EMAIL_CRASH" == "1" ]]; then
+		mail -a $CRASH_DIR/service_logs.zip -a $CRASH_DIR/script_logs.zip -r "$EMAIL_SENDER ($NAME-$SERVICE_NAME)" -s "Notification: Crash" $EMAIL_RECIPIENT <<- EOF
+		The server crashed 3 times in the last 5 minutes. Automatic restart is disabled and the server is inactive. Please check the logs for more information.
+
+		Attachment contents:
+		service_logs.zip - Logs from the systemd service
+		script_logs.zip - Logs from the script
+
+		DO NOT SEND ANY OF THESE TO THE DEVS!
+		EOF
+	fi
+
+	echo "$(date +"%Y-%m-%d %H:%M:%S") [$VERSION] [$NAME] [INFO] (Crash) Server crashed. Please review your logs located in $CRASH_DIR." | tee -a "$LOG_SCRIPT"
+}
+
+#--------------------------
+
+#Creates a backup of the server
 script_backup() {
 	script_logs
+
 	#If there is not a folder for today, create one
-	if [ ! -d "$BCKP_DEST" ]; then
-		mkdir -p $BCKP_DEST
-	fi
-	#Backup source to destination
-	echo "$(date +"%Y-%m-%d %H:%M:%S") [$VERSION] [$NAME] [INFO] (Backup) Backup has been initiated." | tee -a "$LOG_SCRIPT"
-	cd "$BCKP_SRC_DIR"
-	tar -cpvzf $BCKP_DEST/$(date +"%Y%m%d%H%M").tar.gz $BCKP_SRC #| sed -e "s/^/$(date +"%Y-%m-%d %H:%M:%S") [$NAME] [INFO] (Backup) Compressing: /" | tee -a "$LOG_SCRIPT"
-	echo "$(date +"%Y-%m-%d %H:%M:%S") [$VERSION] [$NAME] [INFO] (Backup) Backup complete." | tee -a "$LOG_SCRIPT"
-}
-
-#---------------------------
-
-#Automaticly backs up the server and deletes old backups
-script_autobackup() {
-	script_logs
-	if [[ "$(systemctl --user show -p ActiveState --value $SERVICE)" != "active" ]]; then
-		echo "$(date +"%Y-%m-%d %H:%M:%S") [$VERSION] [$NAME] [INFO] (Autobackup) Server is not running." | tee -a "$LOG_SCRIPT"
-	elif [[ "$(systemctl --user show -p ActiveState --value $SERVICE)" == "active" ]]; then
-		sleep 1
-		script_backup
-		sleep 1
-		script_deloldbackup
-	fi
-}
-
-#---------------------------
-
-#Delete the savegame from the server
-script_delete_save() {
-	script_logs
-	if [[ "$(systemctl --user show -p ActiveState --value $SERVICE)" != "active" ]] && [[ "$(systemctl --user show -p ActiveState --value $SERVICE)" != "activating" ]] && [[ "$(systemctl --user show -p ActiveState --value $SERVICE)" != "deactivating" ]]; then
-		echo "$(date +"%Y-%m-%d %H:%M:%S") [$VERSION] [$NAME] [INFO] (Delete save) WARNING! This will delete the server's save game." | tee -a "$LOG_SCRIPT"
-		read -p "Are you sure you want to delete the server's save game? (y/n): " DELETE_SERVER_SAVE
-		if [[ "$DELETE_SERVER_SAVE" =~ ^([yY][eE][sS]|[yY])$ ]]; then
-			read -p "Do you also want to delete the server.cfg file? (y/n): " DELETE_SERVER_CONFIG
-			if [[ "$DELETE_SERVER_CONFIG" =~ ^([yY][eE][sS]|[yY])$ ]]; then
-				rm -rf $SRV_DIR/server.cfg
-				rm -rf "/srv/$SERVICE_NAME/.local/share/Arma 3/*"
-				rm -rf "/srv/$SERVICE_NAME/.local/share/Arma 3 - Other Profiles/*"
-				echo "$(date +"%Y-%m-%d %H:%M:%S") [$VERSION] [$NAME] [INFO] (Delete save) Deletion of save files and the server.cfg file complete." | tee -a "$LOG_SCRIPT"
-			elif [[ "$DELETE_SERVER_CONFIG" =~ ^([nN][oO]|[nN])$ ]]; then
-				rm -rf "/srv/$SERVICE_NAME/.local/share/Arma 3/*"
-				rm -rf "/srv/$SERVICE_NAME/.local/share/Arma 3 - Other Profiles/*"
-				echo "$(date +"%Y-%m-%d %H:%M:%S") [$VERSION] [$NAME] [INFO] (Delete save) Deletion of save files complete. The server.cfg file is untouched." | tee -a "$LOG_SCRIPT"
-			fi
-		elif [[ "$DELETE_SERVER_SAVE" =~ ^([nN][oO]|[nN])$ ]]; then
-			echo "$(date +"%Y-%m-%d %H:%M:%S") [$VERSION] [$NAME] [INFO] (Delete save) Save deletion canceled." | tee -a "$LOG_SCRIPT"
+	script_backup_create_folder() {
+		if [ ! -d "$BCKP_DIR/$BCKP_STRUCTURE" ]; then
+			mkdir -p "$BCKP_DIR/$BCKP_STRUCTURE"
 		fi
-	elif [[ "$(systemctl --user show -p ActiveState --value $SERVICE)" == "active" ]]; then
-		echo "$(date +"%Y-%m-%d %H:%M:%S") [$VERSION] [$NAME] [INFO] (Clear save) The server is running. Aborting..." | tee -a "$LOG_SCRIPT"
+	}
+
+	#Backup source to destination
+	echo "$(date +"%Y-%m-%d %H:%M:%S") [$VERSION] [$NAME] [INFO] (Backup) Backup has been initiated." | tee -a  "$LOG_SCRIPT"
+	if [[ "$(systemctl --user show -p ActiveState --value $SERVER_SERVICE)" != "active" ]] && [[ "$(systemctl --user show -p UnitFileState --value $SERVER_SERVICE)" == "enabled" ]]; then
+		echo "$(date +"%Y-%m-%d %H:%M:%S") [$VERSION] [$NAME] [INFO] (Autobackup) Server is not running." | tee -a "$LOG_SCRIPT"
+	elif [[ "$(systemctl --user show -p ActiveState --value $SERVER_SERVICE)" == "active" ]] && [[ "$(systemctl --user show -p UnitFileState --value $SERVER_SERVICE)" == "enabled" ]]; then
+		script_backup_create_folder
+		cd "/srv/$SERVICE_NAME/.local/share"
+		tar -cpvzf $BCKP_DIR/$BCKP_STRUCTURE/$(date +"%Y%m%d%H%M").tar.gz /srv/$SERVICE_NAME/.local/share/Arma*
 	fi
+	echo "$(date +"%Y-%m-%d %H:%M:%S") [$VERSION] [$NAME] [INFO] (Backup) Backup complete." | tee -a  "$LOG_SCRIPT"
 }
 
-#---------------------------
+#--------------------------
+
+#Get steam credentials for script operations
+script_steamcmd_credentials() {
+	while [[ "$STEAMCMDSUCCESS" != "0" ]]; do
+		read -p "Enter your Steam username: " STEAMCMD_UID
+		echo ""
+		read -p "Enter your Steam password: " STEAMCMD_PSW
+		steamcmd +login $STEAMCMD_UID $STEAMCMD_PSW +quit
+		STEAMCMDSUCCESS=$?
+		if [[ "$STEAMCMDSUCCESS" == "0" ]]; then
+			echo "Steam login for $STEAMCMD_UID: SUCCEDED!"
+		elif [[ "$STEAMCMDSUCCESS" != "0" ]]; then
+			echo "Steam login for $STEAMCMD_UID: FAILED!"
+			echo "Please try again."
+		fi
+	done
+}
+
+#--------------------------
 
 #Change the steam branch of the app
 script_change_branch() {
 	script_logs
-	if [[ "$(systemctl --user show -p ActiveState --value $SERVICE)" != "active" ]] && [[ "$(systemctl --user show -p ActiveState --value $SERVICE)" != "activating" ]] && [[ "$(systemctl --user show -p ActiveState --value $SERVICE)" != "deactivating" ]]; then
-		echo "$(date +"%Y-%m-%d %H:%M:%S") [$VERSION] [$NAME] [INFO] (Change branch) Server branch change initiated. Waiting on user configuration." | tee -a "$LOG_SCRIPT"
-		read -p "Are you sure you want to change the server branch? (y/n): " CHANGE_SERVER_BRANCH
-		if [[ "$CHANGE_SERVER_BRANCH" =~ ^([yY][eE][sS]|[yY])$ ]]; then
-			echo "$(date +"%Y-%m-%d %H:%M:%S") [$VERSION] [$NAME] [INFO] (Change branch) Clearing game installation." | tee -a "$LOG_SCRIPT"
-			rm -rf $SRV_DIR/*
-			if [[ "$STEAMCMD_BETA_BRANCH" == "1" ]]; then
-				PUBLIC_BRANCH="0"
-			elif [[ "$STEAMCMD_BETA_BRANCH" == "0" ]]; then
-				PUBLIC_BRANCH="1"
-			fi
-			echo "Current configuration:"
-			echo 'Public branch: '"$PUBLIC_BRANCH"
-			echo 'Beta branch enabled: '"$STEAMCMD_BETA_BRANCH"
-			echo 'Beta branch name: '"$STEAMCMD_BETA_BRANCH_NAME"
-			echo ""
-			read -p "Public branch or beta branch? (public/beta): " SET_BRANCH_STATE
-			echo ""
-			if [[ "$SET_BRANCH_STATE" =~ ^([bB][eE][tT][aA]|[bB])$ ]]; then
-				STEAMCMD_BETA_BRANCH="1"
-				echo "Look up beta branch names at https://steamdb.info/app/$APPID/depots/"
-				echo "Name example: experimental"
-				read -p "Enter beta branch name: " STEAMCMD_BETA_BRANCH_NAME
-			elif [[ "$SET_BRANCH_STATE" =~ ^([pP][uU][bB][lL][iI][cC]|[pP])$ ]]; then
-				STEAMCMD_BETA_BRANCH="0"
-				STEAMCMD_BETA_BRANCH_NAME="none"
-			fi
-			sed -i '/beta_branch_enabled/d' $SCRIPT_DIR/$SERVICE_NAME-config.conf
-			sed -i '/beta_branch_name/d' $SCRIPT_DIR/$SERVICE_NAME-config.conf
-			echo 'beta_branch_enabled='"$STEAMCMD_BETA_BRANCH" >> $SCRIPT_DIR/$SERVICE_NAME-config.conf
-			echo 'beta_branch_name='"$STEAMCMD_BETA_BRANCH_NAME" >> $SCRIPT_DIR/$SERVICE_NAME-config.conf
-			if [[ "$STEAMCMD_BETA_BRANCH" == "0" ]]; then
-				INSTALLED_BUILDID=$(cat /srv/$SERVICE_NAME/updates/steam_app_data.txt | grep -EA 1000 "^\s+\"branches\"$" | grep -EA 5 "^\s+\"public\"$" | grep -m 1 -EB 10 "^\s+}$" | grep -E "^\s+\"buildid\"\s+" | tr '[:blank:]"' ' ' | tr -s ' ' | cut -d' ' -f3)
-				echo "$INSTALLED_BUILDID" > $UPDATE_DIR/installed.buildid
-
-				INSTALLED_TIME=$(cat /srv/$SERVICE_NAME/updates/steam_app_data.txt | grep -EA 1000 "^\s+\"branches\"$" | grep -EA 5 "^\s+\"public\"$" | grep -m 1 -EB 10 "^\s+}$" | grep -E "^\s+\"timeupdated\"\s+" | tr '[:blank:]"' ' ' | tr -s ' ' | cut -d' ' -f3)
-				echo "$INSTALLED_TIME" > $UPDATE_DIR/installed.timeupdated
-
-				if [[ "$STEAMGUARD_CLI" == "1" ]]; then
-					steamcmd +@sSteamCmdForcePlatformType windows +force_install_dir $SRV_DIR/$WINE_PREFIX_GAME_DIR +login $STEAMCMD_UID $STEAMCMD_PSW $(steamguard) +app_update $APPID validate +quit
-				else
-					steamcmd +@sSteamCmdForcePlatformType windows +force_install_dir $SRV_DIR/$WINE_PREFIX_GAME_DIR +login $STEAMCMD_UID $STEAMCMD_PSW +app_update $APPID validate +quit
-				fi
-			elif [[ "$STEAMCMD_BETA_BRANCH" == "1" ]]; then
-				INSTALLED_BUILDID=$(cat /srv/$SERVICE_NAME/updates/steam_app_data.txt | grep -EA 1000 "^\s+\"branches\"$" | grep -EA 5 "^\s+\"$STEAMCMD_BETA_BRANCH_NAME\"$" | grep -m 1 -EB 10 "^\s+}$" | grep -E "^\s+\"buildid\"\s+" | tr '[:blank:]"' ' ' | tr -s ' ' | cut -d' ' -f3)
-				echo "$INSTALLED_BUILDID" > $UPDATE_DIR/installed.buildid
-
-				INSTALLED_TIME=$(cat /srv/$SERVICE_NAME/updates/steam_app_data.txt | grep -EA 1000 "^\s+\"branches\"$" | grep -EA 5 "^\s+\"$STEAMCMD_BETA_BRANCH_NAME\"$" | grep -m 1 -EB 10 "^\s+}$" | grep -E "^\s+\"timeupdated\"\s+" | tr '[:blank:]"' ' ' | tr -s ' ' | cut -d' ' -f3)
-				echo "$INSTALLED_TIME" > $UPDATE_DIR/installed.timeupdated
-
-				if [[ "$STEAMGUARD_CLI" == "1" ]]; then
-					steamcmd +@sSteamCmdForcePlatformType windows +force_install_dir $SRV_DIR/$WINE_PREFIX_GAME_DIR +login $STEAMCMD_UID $STEAMCMD_PSW $(steamguard) +app_update $APPID -beta $INSTALL_STEAMCMD_BETA_BRANCH_NAME validate +quit
-				else
-					steamcmd +@sSteamCmdForcePlatformType windows +force_install_dir $SRV_DIR/$WINE_PREFIX_GAME_DIR +login $STEAMCMD_UID $STEAMCMD_PSW +app_update $APPID -beta $STEAMCMD_BETA_BRANCH_NAME validate +quit
-				fi
-			fi
-			echo "$(date +"%Y-%m-%d %H:%M:%S") [$VERSION] [$NAME] [INFO] (Change branch) Server branch change complete." | tee -a "$LOG_SCRIPT"
-		elif [[ "$CHANGE_SERVER_BRANCH" =~ ^([nN][oO]|[nN])$ ]]; then
-			echo "$(date +"%Y-%m-%d %H:%M:%S") [$VERSION] [$NAME] [INFO] (Change branch) Server branch change canceled." | tee -a "$LOG_SCRIPT"
-		fi
-	elif [[ "$(systemctl --user show -p ActiveState --value $SERVICE)" == "active" ]]; then
-		echo "$(date +"%Y-%m-%d %H:%M:%S") [$VERSION] [$NAME] [INFO] (Change branch) The server is running. Aborting..." | tee -a "$LOG_SCRIPT"
+	echo "$(date +"%Y-%m-%d %H:%M:%S") [$VERSION] [$NAME] [INFO] (Change branch) Server branch change initiated. Waiting on user configuration." | tee -a "$LOG_SCRIPT"
+	if [[ "$STEAMCMD_UID" == "disabled" ]] && [[ "$STEAMCMD_PSW" == "disabled" ]]; then
+		script_steamcmd_credentials
 	fi
-}
 
-#---------------------------
+	read -p "Are you sure you want to change the server branch? (y/n): " CHANGE_SERVER_BRANCH
+	if [[ "$CHANGE_SERVER_BRANCH" =~ ^([yY][eE][sS]|[yY])$ ]]; then
+		echo "$(date +"%Y-%m-%d %H:%M:%S") [$VERSION] [$NAME] [INFO] (Change branch) Clearing game installation." | tee -a "$LOG_SCRIPT"
+		rm -rf $SRV_DIR/*
+		if [[ "$STEAMCMD_BETA_BRANCH" == "1" ]]; then
+			PUBLIC_BRANCH="0"
+		elif [[ "$STEAMCMD_BETA_BRANCH" == "0" ]]; then
+			PUBLIC_BRANCH="1"
+		fi
+		echo "Current configuration:"
+		echo 'Public branch: '"$PUBLIC_BRANCH"
+		echo 'Beta branch enabled: '"$STEAMCMD_BETA_BRANCH"
+		echo 'Beta branch name: '"$STEAMCMD_BETA_BRANCH_NAME"
+		echo ""
+		read -p "Public branch or beta branch? (public/beta): " SET_BRANCH_STATE
+		echo ""
+		if [[ "$SET_BRANCH_STATE" =~ ^([bB][eE][tT][aA]|[bB])$ ]]; then
+			STEAMCMD_BETA_BRANCH="1"
+			echo "Look up beta branch names at https://steamdb.info/app/$APPID/depots/"
+			echo "Name example: experimental"
+			read -p "Enter beta branch name: " STEAMCMD_BETA_BRANCH_NAME
+		elif [[ "$SET_BRANCH_STATE" =~ ^([pP][uU][bB][lL][iI][cC]|[pP])$ ]]; then
+			STEAMCMD_BETA_BRANCH="0"
+			STEAMCMD_BETA_BRANCH_NAME="none"
+		fi
+		sed -i '/beta_branch_enabled/d' $SCRIPT_DIR/$SERVICE_NAME-steam.conf
+		sed -i '/beta_branch_name/d' $SCRIPT_DIR/$SERVICE_NAME-steam.conf
+		echo 'beta_branch_enabled='"$STEAMCMD_BETA_BRANCH" >> $SCRIPT_DIR/$SERVICE_NAME-steam.conf
+		echo 'beta_branch_name='"$STEAMCMD_BETA_BRANCH_NAME" >> $SCRIPT_DIR/$SERVICE_NAME-steam.conf
+		steamcmd +login anonymous +app_info_update 1 +app_info_print $APPID +quit > $UPDATE_DIR/steam_app_data.txt
 
-script_install_mods() {
-	if [[ "$MODS_ENABLED" == "1" ]]; then
-		#rm -v /srv/$SERVICE_NAME/server/keys/ !("a3.bikey")
-		IFS=","
-		for MOD_NAME_ID in $MODS; do
-# 			echo "SteamCMD is updating mod $MOD_NAME_ID"
-			MOD_ID=$(echo $MOD_NAME_ID | cut -d - -f2)
-			MOD_NAME=$(echo $MOD_NAME_ID | cut -d - -f1)
+		if [[ "$(systemctl --user show -p ActiveState --value $SERVICE_NAME)" == "active" ]]; then
+			script_stop
+			WAS_ACTIVE="1"
+		fi
+
+		if [[ "$STEAMCMD_BETA_BRANCH" == "0" ]]; then
+			INSTALLED_BUILDID=$(cat $UPDATE_DIR/steam_app_data.txt | grep -EA 1000 "^\s+\"branches\"$" | grep -EA 5 "^\s+\"public\"$" | grep -m 1 -EB 10 "^\s+}$" | grep -E "^\s+\"buildid\"\s+" | tr '[:blank:]"' ' ' | tr -s ' ' | cut -d' ' -f3)
+			echo "$INSTALLED_BUILDID" > $UPDATE_DIR/installed.buildid
+
+			INSTALLED_TIME=$(cat $UPDATE_DIR/steam_app_data.txt | grep -EA 1000 "^\s+\"branches\"$" | grep -EA 5 "^\s+\"public\"$" | grep -m 1 -EB 10 "^\s+}$" | grep -E "^\s+\"timeupdated\"\s+" | tr '[:blank:]"' ' ' | tr -s ' ' | cut -d' ' -f3)
+			echo "$INSTALLED_TIME" > $UPDATE_DIR/installed.timeupdated
 
 			if [[ "$STEAMGUARD_CLI" == "1" ]]; then
-				steamcmd +force_install_dir $SRV_DIR/ +login $STEAMCMD_UID $STEAMCMD_PSW $(steamguard) +workshop_download_item $APPID_WORKSHOP $MOD_ID +quit
+				steamcmd +@sSteamCmdForcePlatformType windows +force_install_dir $SRV_DIR/$WINE_PREFIX_GAME_DIR +login $STEAMCMD_UID $STEAMCMD_PSW $(steamguard) +app_update $APPID validate +quit
 			else
-				steamcmd +force_install_dir $SRV_DIR/ +login $STEAMCMD_UID $STEAMCMD_PSW +workshop_download_item $APPID_WORKSHOP $MOD_ID +quit
+				steamcmd +@sSteamCmdForcePlatformType windows +force_install_dir $SRV_DIR/$WINE_PREFIX_GAME_DIR +login $STEAMCMD_UID $STEAMCMD_PSW +app_update $APPID validate +quit
 			fi
+		elif [[ "$STEAMCMD_BETA_BRANCH" == "1" ]]; then
+			INSTALLED_BUILDID=$(cat $UPDATE_DIR/steam_app_data.txt | grep -EA 1000 "^\s+\"branches\"$" | grep -EA 5 "^\s+\"$STEAMCMD_BETA_BRANCH_NAME\"$" | grep -m 1 -EB 10 "^\s+}$" | grep -E "^\s+\"buildid\"\s+" | tr '[:blank:]"' ' ' | tr -s ' ' | cut -d' ' -f3)
+			echo "$INSTALLED_BUILDID" > $UPDATE_DIR/installed.buildid
 
-			ln -s /srv/$SERVICE_NAME/server/steamapps/workshop/content/$APPID_WORKSHOP/$MOD_ID /srv/$SERVICE_NAME/server/@${MOD_NAME}
+			INSTALLED_TIME=$(cat $UPDATE_DIR/steam_app_data.txt | grep -EA 1000 "^\s+\"branches\"$" | grep -EA 5 "^\s+\"$STEAMCMD_BETA_BRANCH_NAME\"$" | grep -m 1 -EB 10 "^\s+}$" | grep -E "^\s+\"timeupdated\"\s+" | tr '[:blank:]"' ' ' | tr -s ' ' | cut -d' ' -f3)
+			echo "$INSTALLED_TIME" > $UPDATE_DIR/installed.timeupdated
 
-			if [ -f "/srv/$SERVICE_NAME/server/steamapps/workshop/content/$APPID_WORKSHOP/$MOD_ID/keys/*.bikey" ]; then
-				cp /srv/$SERVICE_NAME/server/steamapps/workshop/content/$APPID_WORKSHOP/$MOD_ID/keys/*.bikey /srv/$SERVICE_NAME/server/keys/
+			if [[ "$STEAMGUARD_CLI" == "1" ]]; then
+				steamcmd +@sSteamCmdForcePlatformType windows +force_install_dir $SRV_DIR/$WINE_PREFIX_GAME_DIR +login $STEAMCMD_UID $STEAMCMD_PSW $(steamguard) +app_update $APPID -beta $INSTALL_STEAMCMD_BETA_BRANCH_NAME validate +quit
+			else
+				steamcmd +@sSteamCmdForcePlatformType windows +force_install_dir $SRV_DIR/$WINE_PREFIX_GAME_DIR +login $STEAMCMD_UID $STEAMCMD_PSW +app_update $APPID -beta $STEAMCMD_BETA_BRANCH_NAME validate +quit
 			fi
+		fi
 
-			if [ -f "/srv/$SERVICE_NAME/server/steamapps/workshop/content/$APPID_WORKSHOP/$MOD_ID/key/*.bikey" ]; then
-				cp /srv/$SERVICE_NAME/server/steamapps/workshop/content/$APPID_WORKSHOP/$MOD_ID/key/*.bikey /srv/$SERVICE_NAME/server/keys/
-			fi
-		done
+		if [[ "$WAS_ACTIVE" == "1" ]]; then
+			script_start
+		fi
+		echo "$(date +"%Y-%m-%d %H:%M:%S") [$VERSION] [$NAME] [INFO] (Change branch) Server branch change complete." | tee -a "$LOG_SCRIPT"
+	elif [[ "$CHANGE_SERVER_BRANCH" =~ ^([nN][oO]|[nN])$ ]]; then
+		echo "$(date +"%Y-%m-%d %H:%M:%S") [$VERSION] [$NAME] [INFO] (Change branch) Server branch change canceled." | tee -a "$LOG_SCRIPT"
 	fi
 }
 
@@ -682,75 +592,62 @@ script_install_mods() {
 #Check for updates. If there are updates available, shut down the server, update it and restart it.
 script_update() {
 	script_logs
-	if [[ "$STEAMCMD_UID" == "disabled" ]] && [[ "$STEAMCMD_PSW" == "disabled" ]]; then
-		while [[ "$STEAMCMDSUCCESS" != "0" ]]; do
-			read -p "Enter your Steam username: " STEAMCMD_UID
-			echo ""
-			read -p "Enter your Steam password: " STEAMCMD_PSW
-			steamcmd +login $STEAMCMD_UID $STEAMCMD_PSW +quit
-			STEAMCMDSUCCESS=$?
-			if [[ "$STEAMCMDSUCCESS" == "0" ]]; then
-				echo "Steam login for $STEAMCMD_UID: SUCCEDED!"
-			elif [[ "$STEAMCMDSUCCESS" != "0" ]]; then
-				echo "Steam login for $STEAMCMD_UID: FAILED!"
-				echo "Please try again."
-			fi
-		done
-	fi
 	echo "$(date +"%Y-%m-%d %H:%M:%S") [$VERSION] [$NAME] [INFO] (Update) Initializing update check." | tee -a "$LOG_SCRIPT"
+	if [[ "$STEAMCMD_UID" == "disabled" ]] && [[ "$STEAMCMD_PSW" == "disabled" ]]; then
+		script_steamcmd_credentials
+	fi
+
 	if [[ "$STEAMCMD_BETA_BRANCH" == "1" ]]; then
 		echo "$(date +"%Y-%m-%d %H:%M:%S") [$VERSION] [$NAME] [INFO] (Update) Beta branch enabled. Branch name: $STEAMCMD_BETA_BRANCH_NAME" | tee -a "$LOG_SCRIPT"
 	fi
-	
+
 	if [ ! -f $UPDATE_DIR/installed.buildid ] ; then
 		touch $UPDATE_DIR/installed.buildid
 		echo "0" > $UPDATE_DIR/installed.buildid
 	fi
-	
+
 	if [ ! -f $UPDATE_DIR/installed.timeupdated ] ; then
 		touch $UPDATE_DIR/installed.timeupdated
 		echo "0" > $UPDATE_DIR/installed.timeupdated
 	fi
-	
+
 	echo "$(date +"%Y-%m-%d %H:%M:%S") [$VERSION] [$NAME] [INFO] (Update) Removing Steam/appcache/appinfo.vdf" | tee -a "$LOG_SCRIPT"
 	rm -rf "/srv/$SERVICE_NAME/.steam/appcache/appinfo.vdf"
-	
+
 	echo "$(date +"%Y-%m-%d %H:%M:%S") [$VERSION] [$NAME] [INFO] (Update) Connecting to steam servers." | tee -a "$LOG_SCRIPT"
-	steamcmd +login anonymous +app_info_update 1 +app_info_print $APPID +quit > /srv/$SERVICE_NAME/updates/steam_app_data.txt
+	steamcmd +login anonymous +app_info_update 1 +app_info_print $APPID +quit > $UPDATE_DIR/steam_app_data.txt
 
 	if [[ "$STEAMCMD_BETA_BRANCH" == "0" ]]; then
-		AVAILABLE_BUILDID=$(cat /srv/$SERVICE_NAME/updates/steam_app_data.txt | grep -EA 1000 "^\s+\"branches\"$" | grep -EA 5 "^\s+\"public\"$" | grep -m 1 -EB 10 "^\s+}$" | grep -E "^\s+\"buildid\"\s+" | tr '[:blank:]"' ' ' | tr -s ' ' | cut -d' ' -f3)
-		AVAILABLE_TIME=$(cat /srv/$SERVICE_NAME/updates/steam_app_data.txt | grep -EA 1000 "^\s+\"branches\"$" | grep -EA 5 "^\s+\"public\"$" | grep -m 1 -EB 10 "^\s+}$" | grep -E "^\s+\"timeupdated\"\s+" | tr '[:blank:]"' ' ' | tr -s ' ' | cut -d' ' -f3)
+		AVAILABLE_BUILDID=$(cat $UPDATE_DIR/steam_app_data.txt | grep -EA 1000 "^\s+\"branches\"$" | grep -EA 5 "^\s+\"public\"$" | grep -m 1 -EB 10 "^\s+}$" | grep -E "^\s+\"buildid\"\s+" | tr '[:blank:]"' ' ' | tr -s ' ' | cut -d' ' -f3)
+		AVAILABLE_TIME=$(cat $UPDATE_DIR/steam_app_data.txt | grep -EA 1000 "^\s+\"branches\"$" | grep -EA 5 "^\s+\"public\"$" | grep -m 1 -EB 10 "^\s+}$" | grep -E "^\s+\"timeupdated\"\s+" | tr '[:blank:]"' ' ' | tr -s ' ' | cut -d' ' -f3)
 	elif [[ "$STEAMCMD_BETA_BRANCH" == "1" ]]; then
-		AVAILABLE_BUILDID=$(cat /srv/$SERVICE_NAME/updates/steam_app_data.txt | grep -EA 1000 "^\s+\"branches\"$" | grep -EA 5 "^\s+\"$STEAMCMD_BETA_BRANCH_NAME\"$" | grep -m 1 -EB 10 "^\s+}$" | grep -E "^\s+\"buildid\"\s+" | tr '[:blank:]"' ' ' | tr -s ' ' | cut -d' ' -f3)
-		AVAILABLE_TIME=$(cat /srv/$SERVICE_NAME/updates/steam_app_data.txt | grep -EA 1000 "^\s+\"branches\"$" | grep -EA 5 "^\s+\"$STEAMCMD_BETA_BRANCH_NAME\"$" | grep -m 1 -EB 10 "^\s+}$" | grep -E "^\s+\"timeupdated\"\s+" | tr '[:blank:]"' ' ' | tr -s ' ' | cut -d' ' -f3)
+		AVAILABLE_BUILDID=$(cat $UPDATE_DIR/steam_app_data.txt | grep -EA 1000 "^\s+\"branches\"$" | grep -EA 5 "^\s+\"$STEAMCMD_BETA_BRANCH_NAME\"$" | grep -m 1 -EB 10 "^\s+}$" | grep -E "^\s+\"buildid\"\s+" | tr '[:blank:]"' ' ' | tr -s ' ' | cut -d' ' -f3)
+		AVAILABLE_TIME=$(cat $UPDATE_DIR/steam_app_data.txt | grep -EA 1000 "^\s+\"branches\"$" | grep -EA 5 "^\s+\"$STEAMCMD_BETA_BRANCH_NAME\"$" | grep -m 1 -EB 10 "^\s+}$" | grep -E "^\s+\"timeupdated\"\s+" | tr '[:blank:]"' ' ' | tr -s ' ' | cut -d' ' -f3)
 	fi
-	
+
 	echo "$(date +"%Y-%m-%d %H:%M:%S") [$VERSION] [$NAME] [INFO] (Update) Received application info data." | tee -a "$LOG_SCRIPT"
-	
+
 	INSTALLED_BUILDID=$(cat $UPDATE_DIR/installed.buildid)
 	INSTALLED_TIME=$(cat $UPDATE_DIR/installed.timeupdated)
-	
+
 	if [ "$AVAILABLE_TIME" -gt "$INSTALLED_TIME" ]; then
 		echo "$(date +"%Y-%m-%d %H:%M:%S") [$VERSION] [$NAME] [INFO] (Update) New update detected." | tee -a "$LOG_SCRIPT"
 		echo "$(date +"%Y-%m-%d %H:%M:%S") [$VERSION] [$NAME] [INFO] (Update) Installed: BuildID: $INSTALLED_BUILDID, TimeUpdated: $INSTALLED_TIME" | tee -a "$LOG_SCRIPT"
 		echo "$(date +"%Y-%m-%d %H:%M:%S") [$VERSION] [$NAME] [INFO] (Update) Available: BuildID: $AVAILABLE_BUILDID, TimeUpdated: $AVAILABLE_TIME" | tee -a "$LOG_SCRIPT"
-		
+
 		if [[ "$DISCORD_UPDATE" == "1" ]]; then
-			while IFS="" read -r DISCORD_WEBHOOK || [ -n "$DISCORD_WEBHOOK" ]; do
-				curl -H "Content-Type: application/json" -X POST -d "{\"content\": \"$(date +"%Y-%m-%d %H:%M:%S") [$VERSION] [$NAME] [INFO] (Update) New update detected. Installing update.\"}" "$DISCORD_WEBHOOK"
-			done < $SCRIPT_DIR/discord_webhooks.txt
+			script_discord_message "$DISCORD_COLOR_UPDATE" "New update detected. Installing update."
 		fi
-		
+
 		if [[ "$(systemctl --user show -p ActiveState --value $SERVICE)" == "active" ]]; then
 			sleep 1
 			WAS_ACTIVE="1"
 			script_stop
 			sleep 1
 		fi
-		
+
 		echo "$(date +"%Y-%m-%d %H:%M:%S") [$VERSION] [$NAME] [INFO] (Update) Updating..." | tee -a "$LOG_SCRIPT"
-		
+
 		if [[ "$STEAMGUARD_CLI" == "1" ]]; then
 			if [[ "$STEAMCMD_BETA_BRANCH" == "0" ]]; then
 				steamcmd +force_install_dir $SRV_DIR/ +login $STEAMCMD_UID $STEAMCMD_PSW $(steamguard) +app_update $APPID validate +quit
@@ -768,27 +665,22 @@ script_update() {
 		echo "$(date +"%Y-%m-%d %H:%M:%S") [$VERSION] [$NAME] [INFO] (Update) Update completed." | tee -a "$LOG_SCRIPT"
 		echo "$AVAILABLE_BUILDID" > $UPDATE_DIR/installed.buildid
 		echo "$AVAILABLE_TIME" > $UPDATE_DIR/installed.timeupdated
-		
+
 		if [ "$WAS_ACTIVE" == "1" ]; then
 			sleep 1
 			if [[ "$UPDATE_IGNORE_FAILED_ACTIVATIONS" == "1" ]]; then
-				script_start_ignore_errors
+				script_start "ignore"
 			else
 				script_start
 			fi
-			script_start
 		fi
-		
-		if [[ "$EMAIL_UPDATE" == "1" ]]; then
-			mail -r "$EMAIL_SENDER ($NAME-$SERVICE_NAME)" -s "Notification: Update" $EMAIL_RECIPIENT <<- EOF
-			Server was updated. Please check the update notes if there are any additional steps to take.
-			EOF
-		fi
-		
+
 		if [[ "$DISCORD_UPDATE" == "1" ]]; then
-			while IFS="" read -r DISCORD_WEBHOOK || [ -n "$DISCORD_WEBHOOK" ]; do
-				curl -H "Content-Type: application/json" -X POST -d "{\"content\": \"$(date +"%Y-%m-%d %H:%M:%S") [$VERSION] [$NAME] [INFO] (Update) Server update complete.\"}" "$DISCORD_WEBHOOK"
-			done < $SCRIPT_DIR/discord_webhooks.txt
+			script_discord_message "$DISCORD_COLOR_UPDATE" "Server update complete."
+		fi
+
+		if [[ "$EMAIL_UPDATE" == "1" ]]; then
+			script_email_message "$NAME" "Notification: Update" "Server was updated. Please check the update notes if there are any additional steps to take."
 		fi
 	elif [ "$AVAILABLE_TIME" -eq "$INSTALLED_TIME" ]; then
 		echo "$(date +"%Y-%m-%d %H:%M:%S") [$VERSION] [$NAME] [INFO] (Update) No new updates detected." | tee -a "$LOG_SCRIPT"
@@ -802,21 +694,12 @@ script_update() {
 script_update_mods() {
 	script_logs
 	if [[ "$MODS_ENABLED" == "1" ]]; then
+		script_logs
+		echo "$(date +"%Y-%m-%d %H:%M:%S") [$VERSION] [$NAME] [INFO] (Mod Update) Initializing update check." | tee -a "$LOG_SCRIPT"
 		if [[ "$STEAMCMD_UID" == "disabled" ]] && [[ "$STEAMCMD_PSW" == "disabled" ]]; then
-			while [[ "$STEAMCMDSUCCESS" != "0" ]]; do
-				read -p "Enter your Steam username: " STEAMCMD_UID
-				echo ""
-				read -p "Enter your Steam password: " STEAMCMD_PSW
-				steamcmd +login $STEAMCMD_UID $STEAMCMD_PSW +quit
-				STEAMCMDSUCCESS=$?
-				if [[ "$STEAMCMDSUCCESS" == "0" ]]; then
-					echo "Steam login for $STEAMCMD_UID: SUCCEDED!"
-				elif [[ "$STEAMCMDSUCCESS" != "0" ]]; then
-					echo "Steam login for $STEAMCMD_UID: FAILED!"
-					echo "Please try again."
-				fi
-			done
+			script_steamcmd_credentials
 		fi
+
 		MODS_TO_UPDATE=""
 		echo "$(date +"%Y-%m-%d %H:%M:%S") [$VERSION] [$NAME] [INFO] (Mod Update) Checking for mod updates." | tee -a "$LOG_SCRIPT"
 		IFS=","
@@ -837,18 +720,16 @@ script_update_mods() {
 		if [ ! -z "$MODS_TO_UPDATE" ]; then
 			echo "$(date +"%Y-%m-%d %H:%M:%S") [$VERSION] [$NAME] [INFO] (Mod Update) New mod updates detected. Installing updates." | tee -a "$LOG_SCRIPT"
 			if [[ "$DISCORD_UPDATE_MOD" == "1" ]]; then
-				while IFS="" read -r DISCORD_WEBHOOK || [ -n "$DISCORD_WEBHOOK" ]; do
-					curl -H "Content-Type: application/json" -X POST -d "{\"content\": \"$(date +"%Y-%m-%d %H:%M:%S") [$VERSION] [$NAME] [INFO] (Mod Update) New updates detected. Installing updates.\"}" "$DISCORD_WEBHOOK"
-				done < $SCRIPT_DIR/discord_webhooks.txt
+				script_discord_message "$DISCORD_COLOR_UPDATE" "New updates for mods detected. Installing updates."
 			fi
-			
+
 			if [[ "$(systemctl --user show -p ActiveState --value $SERVICE)" == "active" ]]; then
 				sleep 1
 				WAS_ACTIVE="1"
 				script_stop
 				sleep 1
 			fi
-			
+
 			IFS=","
 			for MOD_NAME_ID in $MODS_TO_UPDATE; do
 				MOD_ID=$(echo $MOD_NAME_ID | cut -d - -f2)
@@ -879,27 +760,37 @@ script_update_mods() {
 				echo "$AVAILABLE_VERSION_MOD" > $UPDATE_DIR/mods/$MOD_NAME.mod_version
 				echo "$(date +"%Y-%m-%d %H:%M:%S") [$VERSION] [$NAME] [INFO] (Mod Update) Update for mod $MOD_NAME complete." | tee -a "$LOG_SCRIPT"
 			done
-			
+
 			if [ "$WAS_ACTIVE" == "1" ]; then
 				sleep 1
 				if [[ "$UPDATE_IGNORE_FAILED_ACTIVATIONS" == "1" ]]; then
-					script_start_ignore_errors
+					script_start "ignore"
 				else
 					script_start
 				fi
 			fi
-			
+
 			if [[ "$EMAIL_UPDATE_MOD" == "1" ]]; then
 				mail -r "$EMAIL_SENDER ($NAME-$SERVICE_NAME)" -s "Notification: Mod Update" $EMAIL_RECIPIENT <<- EOF
 				Mods ware updated. Please check the update notes if there are any additional steps to take.
 				Updated mods: $MODS_TO_UPDATE
 				EOF
 			fi
-			
+
 			if [[ "$DISCORD_UPDATE_MOD" == "1" ]]; then
 				while IFS="" read -r DISCORD_WEBHOOK || [ -n "$DISCORD_WEBHOOK" ]; do
 					curl -H "Content-Type: application/json" -X POST -d "{\"content\": \"$(date +"%Y-%m-%d %H:%M:%S") [$VERSION] [$NAME] [INFO] (Mod Update) Update complete.\nUpdated mods: $MODS_TO_UPDATE\"}" "$DISCORD_WEBHOOK"
 				done < $SCRIPT_DIR/discord_webhooks.txt
+			fi
+
+
+
+			if [[ "$DISCORD_UPDATE" == "1" ]]; then
+				script_discord_message "$DISCORD_COLOR_UPDATE" "Mods update complete.\n\nUpdated mods: $MODS_TO_UPDATE"
+			fi
+
+			if [[ "$EMAIL_UPDATE" == "1" ]]; then
+				script_email_message "$NAME" "Notification: Mod Update" "Mods ware updated. Please check the update notes if there are any additional steps to take.\nUpdated mods: $MODS_TO_UPDATE"
 			fi
 			echo "$(date +"%Y-%m-%d %H:%M:%S") [$VERSION] [$NAME] [INFO] (Mod Update) Update for all mods complete." | tee -a "$LOG_SCRIPT"
 		else
@@ -914,164 +805,46 @@ script_update_mods() {
 script_verify_game_integrity() {
 	script_logs
 	if [[ "$STEAMCMD_UID" == "disabled" ]] && [[ "$STEAMCMD_PSW" == "disabled" ]]; then
-		while [[ "$STEAMCMDSUCCESS" != "0" ]]; do
-			read -p "Enter your Steam username: " STEAMCMD_UID
-			echo ""
-			read -p "Enter your Steam password: " STEAMCMD_PSW
-			steamcmd +login $STEAMCMD_UID $STEAMCMD_PSW +quit
-			STEAMCMDSUCCESS=$?
-			if [[ "$STEAMCMDSUCCESS" == "0" ]]; then
-				echo "Steam login for $STEAMCMD_UID: SUCCEDED!"
-			elif [[ "$STEAMCMDSUCCESS" != "0" ]]; then
-				echo "Steam login for $STEAMCMD_UID: FAILED!"
-				echo "Please try again."
-			fi
-		done
+		script_steamcmd_credentials
 	fi
+
 	echo "$(date +"%Y-%m-%d %H:%M:%S") [$VERSION] [$NAME] [INFO] (Integrity check) Initializing integrity check." | tee -a "$LOG_SCRIPT"
 	if [[ "$STEAMCMD_BETA_BRANCH" == "1" ]]; then
 		echo "$(date +"%Y-%m-%d %H:%M:%S") [$VERSION] [$NAME] [INFO] (Integrity check) Beta branch enabled. Branch name: $STEAMCMD_BETA_BRANCH_NAME" | tee -a "$LOG_SCRIPT"
 	fi
-	
+
 	echo "$(date +"%Y-%m-%d %H:%M:%S") [$VERSION] [$NAME] [INFO] (Integrity check) Removing Steam/appcache/appinfo.vdf" | tee -a "$LOG_SCRIPT"
 	rm -rf "/srv/$SERVICE_NAME/.steam/appcache/appinfo.vdf"
-	
+
 	if [[ "$(systemctl --user show -p ActiveState --value $SERVICE)" == "active" ]]; then
 		sleep 1
 		WAS_ACTIVE="1"
 		script_stop
 		sleep 1
 	fi
-	
+
 	if [[ "$STEAMGUARD_CLI" == "1" ]]; then
 		if [[ "$STEAMCMD_BETA_BRANCH" == "0" ]]; then
-			steamcmd +@sSteamCmdForcePlatformType windows +force_install_dir $SRV_DIR/ +login $STEAMCMD_UID $STEAMCMD_PSW $(steamguard) +app_update $APPID validate +quit
+			steamcmd +force_install_dir $SRV_DIR/$WINE_PREFIX_GAME_DIR +login $STEAMCMD_UID $STEAMCMD_PSW $(steamguard) +app_update $APPID validate +quit
 		elif [[ "$STEAMCMD_BETA_BRANCH" == "1" ]]; then
-			steamcmd +@sSteamCmdForcePlatformType windows +force_install_dir $SRV_DIR/ +login $STEAMCMD_UID $STEAMCMD_PSW $(steamguard) +app_update $APPID -beta $STEAMCMD_BETA_BRANCH_NAME validate +quit
+			steamcmd +force_install_dir $SRV_DIR/$WINE_PREFIX_GAME_DIR +login $STEAMCMD_UID $STEAMCMD_PSW $(steamguard) +app_update $APPID -beta $STEAMCMD_BETA_BRANCH_NAME validate +quit
 		fi
 	else
 		if [[ "$STEAMCMD_BETA_BRANCH" == "0" ]]; then
-			steamcmd +@sSteamCmdForcePlatformType windows +force_install_dir $SRV_DIR/ +login $STEAMCMD_UID $STEAMCMD_PSW +app_update $APPID validate +quit
+			steamcmd +force_install_dir $SRV_DIR/$WINE_PREFIX_GAME_DIR +login $STEAMCMD_UID $STEAMCMD_PSW +app_update $APPID validate +quit
 		elif [[ "$STEAMCMD_BETA_BRANCH" == "1" ]]; then
-			steamcmd +@sSteamCmdForcePlatformType windows +force_install_dir $SRV_DIR/ +login $STEAMCMD_UID $STEAMCMD_PSW +app_update $APPID -beta $STEAMCMD_BETA_BRANCH_NAME validate +quit
+			steamcmd +force_install_dir $SRV_DIR/$WINE_PREFIX_GAME_DIR +login $STEAMCMD_UID $STEAMCMD_PSW +app_update $APPID -beta $STEAMCMD_BETA_BRANCH_NAME validate +quit
 		fi
 	fi
 
 	echo "$(date +"%Y-%m-%d %H:%M:%S") [$VERSION] [$NAME] [INFO] (Integrity check) Integrity check completed." | tee -a "$LOG_SCRIPT"
-	
+
 	if [ "$WAS_ACTIVE" == "1" ]; then
 		sleep 1
 		if [[ "$UPDATE_IGNORE_FAILED_ACTIVATIONS" == "1" ]]; then
-			script_start_ignore_errors
+			script_start "ignore"
 		else
 			script_start
-		fi
-	fi
-}
-
-#---------------------------
-
-#Install tmux configuration for specific server when first ran
-script_server_tmux_install() {
-	if [ -z "$1" ]; then
-		echo "$(date +"%Y-%m-%d %H:%M:%S") [$VERSION] [$NAME] [INFO] (Server tmux configuration) Installing tmux configuration for server." | tee -a "$LOG_SCRIPT"
-		TMUX_CONFIG_FILE="/tmp/$SERVICE_NAME-tmux.conf"
-	elif [[ "$1" == "override" ]]; then
-		echo "$(date +"%Y-%m-%d %H:%M:%S") [$VERSION] [$NAME] [INFO] (Server tmux configuration) Installing tmux override configuration for server." | tee -a "$LOG_SCRIPT"
-		TMUX_CONFIG_FILE="/srv/$SERVICE_NAME/config/$SERVICE_NAME-tmux.conf"
-	fi
-	
-	if [ -f /srv/$SERVICE_NAME/config/$SERVICE_NAME-tmux.conf ]; then
-		cp /srv/$SERVICE_NAME/config/$SERVICE_NAME-tmux.conf /tmp/$SERVICE_NAME-tmux.conf
-	else
-		if [ ! -f $TMUX_CONFIG_FILE ]; then
-			touch $TMUX_CONFIG_FILE
-			cat > $TMUX_CONFIG_FILE <<- EOF
-			#Tmux configuration
-			set -g activity-action other
-			set -g allow-rename off
-			set -g assume-paste-time 1
-			set -g base-index 0
-			set -g bell-action any
-			set -g default-command "${SHELL}"
-			set -g default-terminal "tmux-256color" 
-			set -g default-shell "/bin/bash"
-			set -g default-size "132x42"
-			set -g destroy-unattached off
-			set -g detach-on-destroy on
-			set -g display-panes-active-colour red
-			set -g display-panes-colour blue
-			set -g display-panes-time 1000
-			set -g display-time 3000
-			set -g history-limit 10000
-			set -g key-table "root"
-			set -g lock-after-time 0
-			set -g lock-command "lock -np"
-			set -g message-command-style fg=yellow,bg=black
-			set -g message-style fg=black,bg=yellow
-			set -g mouse on
-			#set -g prefix C-b
-			set -g prefix2 None
-			set -g renumber-windows off
-			set -g repeat-time 500
-			set -g set-titles off
-			set -g set-titles-string "#S:#I:#W - \"#T\" #{session_alerts}"
-			set -g silence-action other
-			set -g status on
-			set -g status-bg green
-			set -g status-fg black
-			set -g status-format[0] "#[align=left range=left #{status-left-style}]#{T;=/#{status-left-length}:status-left}#[norange default]#[list=on align=#{status-justify}]#[list=left-marker]<#[list=right-marker]>#[list=on]#{W:#[range=window|#{window_index} #{window-status-style}#{?#{&&:#{window_last_flag},#{!=:#{window-status-last-style},default}}, #{window-status-last-style},}#{?#{&&:#{window_bell_flag},#{!=:#{window-status-bell-style},default}}, #{window-status-bell-style},#{?#{&&:#{||:#{window_activity_flag},#{window_silence_flag}},#{!=:#{window-status-activity-style},default}}, #{window-status-activity-style},}}]#{T:window-status-format}#[norange default]#{?window_end_flag,,#{window-status-separator}},#[range=window|#{window_index} list=focus #{?#{!=:#{window-status-current-style},default},#{window-status-current-style},#{window-status-style}}#{?#{&&:#{window_last_flag},#{!=:#{window-status-last-style},default}}, #{window-status-last-style},}#{?#{&&:#{window_bell_flag},#{!=:#{window-status-bell-style},default}}, #{window-status-bell-style},#{?#{&&:#{||:#{window_activity_flag},#{window_silence_flag}},#{!=:#{window-status-activity-style},default}}, #{window-status-activity-style},}}]#{T:window-status-current-format}#[norange list=on default]#{?window_end_flag,,#{window-status-separator}}}#[nolist align=right range=right #{status-right-style}]#{T;=/#{status-right-length}:status-right}#[norange default]"
-			set -g status-format[1] "#[align=centre]#{P:#{?pane_active,#[reverse],}#{pane_index}[#{pane_width}x#{pane_height}]#[default] }"
-			set -g status-interval 15
-			set -g status-justify left
-			set -g status-keys emacs
-			set -g status-left "[#S] "
-			set -g status-left-length 10
-			set -g status-left-style default
-			set -g status-position bottom
-			set -g status-right "#{?window_bigger,[#{window_offset_x}#,#{window_offset_y}] ,}\"#{=21:pane_title}\" %H:%M %d-%b-%y"
-			set -g status-right-length 40
-			set -g status-right-style default
-			set -g status-style fg=black,bg=green
-			set -g update-environment[0] "DISPLAY"
-			set -g update-environment[1] "KRB5CCNAME"
-			set -g update-environment[2] "SSH_ASKPASS"
-			set -g update-environment[3] "SSH_AUTH_SOCK"
-			set -g update-environment[4] "SSH_AGENT_PID"
-			set -g update-environment[5] "SSH_CONNECTION"
-			set -g update-environment[6] "WINDOWID"
-			set -g update-environment[7] "XAUTHORITY"
-			set -g visual-activity off
-			set -g visual-bell off
-			set -g visual-silence off
-			set -g word-separators " -_@"
-
-			#Change prefix key from ctrl+b to ctrl+a
-			unbind C-b
-			set -g prefix C-a
-			bind C-a send-prefix
-
-			#Bind C-a r to reload the config file
-			bind-key r source-file /tmp/$SERVICE_NAME-tmux.conf \; display-message "Config reloaded!"
-
-			set-hook -g session-created 'resize-window -y 24 -x 10000'
-			set-hook -g client-attached 'resize-window -y 24 -x 10000'
-			set-hook -g client-detached 'resize-window -y 24 -x 10000'
-			set-hook -g client-resized 'resize-window -y 24 -x 10000'
-
-			#Default key bindings (only here for info)
-			#Ctrl-b l (Move to the previously selected window)
-			#Ctrl-b w (List all windows / window numbers)
-			#Ctrl-b <window number> (Move to the specified window number, the default bindings are from 0 – 9)
-			#Ctrl-b q  (Show pane numbers, when the numbers show up type the key to goto that pane)
-
-			#Ctrl-b f <window name> (Search for window name)
-			#Ctrl-b w (Select from interactive list of windows)
-
-			#Copy/ scroll mode
-			#Ctrl-b [ (in copy mode you can navigate the buffer including scrolling the history. Use vi or emacs-style key bindings in copy mode. The default is emacs. To exit copy mode use one of the following keybindings: vi q emacs Esc)
-			EOF
-			echo "$(date +"%Y-%m-%d %H:%M:%S") [$VERSION] [$NAME] [INFO] (Server tmux configuration) Tmux configuration for server installed successfully." | tee -a "$LOG_SCRIPT"
 		fi
 	fi
 }
@@ -1091,7 +864,7 @@ script_timer_one() {
 	elif [[ "$(systemctl --user show -p ActiveState --value $SERVICE)" == "active" ]]; then
 		echo "$(date +"%Y-%m-%d %H:%M:%S") [$VERSION] [$NAME] [INFO] (Status) Server running." | tee -a "$LOG_SCRIPT"
 		script_remove_old_files
-		script_autobackup
+		script_backup
 		if [[ "$STEAMCMDUID" != "disabled" ]] && [[ "$STEAMCMDPSW" != "disabled" ]]; then
 			script_update
 			script_update_mods
@@ -1177,80 +950,187 @@ script_diagnostics() {
 	else
 		echo "Script installed: No"
 	fi
-	
+
 	if [ -f "$SCRIPT_DIR/$SERVICE_NAME-config.conf" ] ; then
 		echo "Configuration file present: Yes"
 	else
 		echo "Configuration file present: No"
 	fi
-	
+
 	if [ -d "/srv/$SERVICE_NAME/backups" ]; then
 		echo "Backups folder present: Yes"
 	else
 		echo "Backups folder present: No"
 	fi
-	
+
 	if [ -d "/srv/$SERVICE_NAME/logs" ]; then
 		echo "Logs folder present: Yes"
 	else
 		echo "Logs folder present: No"
 	fi
-	
+
 	if [ -d "/srv/$SERVICE_NAME/scripts" ]; then
 		echo "Scripts folder present: Yes"
 	else
 		echo "Scripts folder present: No"
 	fi
-	
+
 	if [ -d "/srv/$SERVICE_NAME/server" ]; then
 		echo "Server folder present: Yes"
 	else
 		echo "Server folder present: No"
 	fi
-	
+
 	if [ -d "/srv/$SERVICE_NAME/updates" ]; then
 		echo "Updates folder present: Yes"
 	else
 		echo "Updates folder present: No"
 	fi
-	
+
 	if [ -f "/srv/$SERVICE_NAME/.config/systemd/user/$SERVICE_NAME.service" ]; then
 		echo "Basic service present: Yes"
 	else
 		echo "Basic service present: No"
 	fi
-	
+
 	if [ -f "/srv/$SERVICE_NAME/.config/systemd/user/$SERVICE_NAME-timer-1.timer" ]; then
 		echo "Timer 1 timer present: Yes"
 	else
 		echo "Timer 1 timer present: No"
 	fi
-	
+
 	if [ -f "/srv/$SERVICE_NAME/.config/systemd/user/$SERVICE_NAME-timer-1.service" ]; then
 		echo "Timer 1 service present: Yes"
 	else
 		echo "Timer 1 service present: No"
 	fi
-	
+
 	if [ -f "/srv/$SERVICE_NAME/.config/systemd/user/$SERVICE_NAME-timer-2.timer" ]; then
 		echo "Timer 2 timer present: Yes"
 	else
 		echo "Timer 2 timer present: No"
 	fi
-	
+
 	if [ -f "/srv/$SERVICE_NAME/.config/systemd/user/$SERVICE_NAME-timer-2.service" ]; then
 		echo "Timer 2 service present: Yes"
 	else
 		echo "Timer 2 service present: No"
 	fi
-	
+
 	if [ -f "/srv/$SERVICE_NAME/.config/systemd/user/$SERVICE_NAME-send-notification.service" ]; then
 		echo "Notification sending service present: Yes"
 	else
 		echo "Notification sending service present: No"
 	fi
-	
+
 	echo "Diagnostics complete."
+}
+
+#---------------------------
+
+#Install tmux configuration for specific server when first ran
+script_server_tmux_install() {
+	if [ -z "$1" ]; then
+		echo "$(date +"%Y-%m-%d %H:%M:%S") [$VERSION] [$NAME] [INFO] (Server tmux configuration) Installing tmux configuration for server." | tee -a "$LOG_SCRIPT"
+		TMUX_CONFIG_FILE="/tmp/$SERVICE_NAME-tmux.conf"
+	elif [[ "$1" == "override" ]]; then
+		echo "$(date +"%Y-%m-%d %H:%M:%S") [$VERSION] [$NAME] [INFO] (Server tmux configuration) Installing tmux override configuration for server." | tee -a "$LOG_SCRIPT"
+		TMUX_CONFIG_FILE="$CONFIG_DIR/$SERVICE_NAME-tmux.conf"
+	fi
+
+	if [ -f $CONFIG_DIR/$SERVICE_NAME-tmux.conf ]; then
+		cp $CONFIG_DIR/$SERVICE_NAME-tmux.conf /tmp/$SERVICE_NAME-tmux.conf
+	else
+		if [ ! -f $TMUX_CONFIG_FILE ]; then
+			touch $TMUX_CONFIG_FILE
+			cat > $TMUX_CONFIG_FILE <<- EOF
+			#Tmux configuration
+			set -g activity-action other
+			set -g allow-rename off
+			set -g assume-paste-time 1
+			set -g base-index 0
+			set -g bell-action any
+			set -g default-command "${SHELL}"
+			set -g default-terminal "tmux-256color"
+			set -g default-shell "/bin/bash"
+			set -g default-size "132x42"
+			set -g destroy-unattached off
+			set -g detach-on-destroy on
+			set -g display-panes-active-colour red
+			set -g display-panes-colour blue
+			set -g display-panes-time 1000
+			set -g display-time 3000
+			set -g history-limit 10000
+			set -g key-table "root"
+			set -g lock-after-time 0
+			set -g lock-command "lock -np"
+			set -g message-command-style fg=yellow,bg=black
+			set -g message-style fg=black,bg=yellow
+			set -g mouse on
+			#set -g prefix C-b
+			set -g prefix2 None
+			set -g renumber-windows off
+			set -g repeat-time 500
+			set -g set-titles off
+			set -g set-titles-string "#S:#I:#W - \"#T\" #{session_alerts}"
+			set -g silence-action other
+			set -g status on
+			set -g status-bg green
+			set -g status-fg black
+			set -g status-format[0] "#[align=left range=left #{status-left-style}]#{T;=/#{status-left-length}:status-left}#[norange default]#[list=on align=#{status-justify}]#[list=left-marker]<#[list=right-marker]>#[list=on]#{W:#[range=window|#{window_index} #{window-status-style}#{?#{&&:#{window_last_flag},#{!=:#{window-status-last-style},default}}, #{window-status-last-style},}#{?#{&&:#{window_bell_flag},#{!=:#{window-status-bell-style},default}}, #{window-status-bell-style},#{?#{&&:#{||:#{window_activity_flag},#{window_silence_flag}},#{!=:#{window-status-activity-style},default}}, #{window-status-activity-style},}}]#{T:window-status-format}#[norange default]#{?window_end_flag,,#{window-status-separator}},#[range=window|#{window_index} list=focus #{?#{!=:#{window-status-current-style},default},#{window-status-current-style},#{window-status-style}}#{?#{&&:#{window_last_flag},#{!=:#{window-status-last-style},default}}, #{window-status-last-style},}#{?#{&&:#{window_bell_flag},#{!=:#{window-status-bell-style},default}}, #{window-status-bell-style},#{?#{&&:#{||:#{window_activity_flag},#{window_silence_flag}},#{!=:#{window-status-activity-style},default}}, #{window-status-activity-style},}}]#{T:window-status-current-format}#[norange list=on default]#{?window_end_flag,,#{window-status-separator}}}#[nolist align=right range=right #{status-right-style}]#{T;=/#{status-right-length}:status-right}#[norange default]"
+			set -g status-format[1] "#[align=centre]#{P:#{?pane_active,#[reverse],}#{pane_index}[#{pane_width}x#{pane_height}]#[default] }"
+			set -g status-interval 15
+			set -g status-justify left
+			set -g status-keys emacs
+			set -g status-left "[#S] "
+			set -g status-left-length 10
+			set -g status-left-style default
+			set -g status-position bottom
+			set -g status-right "#{?window_bigger,[#{window_offset_x}#,#{window_offset_y}] ,}\"#{=21:pane_title}\" %H:%M %d-%b-%y"
+			set -g status-right-length 40
+			set -g status-right-style default
+			set -g status-style fg=black,bg=green
+			set -g update-environment[0] "DISPLAY"
+			set -g update-environment[1] "KRB5CCNAME"
+			set -g update-environment[2] "SSH_ASKPASS"
+			set -g update-environment[3] "SSH_AUTH_SOCK"
+			set -g update-environment[4] "SSH_AGENT_PID"
+			set -g update-environment[5] "SSH_CONNECTION"
+			set -g update-environment[6] "WINDOWID"
+			set -g update-environment[7] "XAUTHORITY"
+			set -g visual-activity off
+			set -g visual-bell off
+			set -g visual-silence off
+			set -g word-separators " -_@"
+
+			#Change prefix key from ctrl+b to ctrl+a
+			unbind C-b
+			set -g prefix C-a
+			bind C-a send-prefix
+
+			#Bind C-a r to reload the config file
+			bind-key r source-file /tmp/$SERVICE_NAME-tmux.conf \; display-message "Config reloaded!"
+
+			set-hook -g session-created 'resize-window -y 24 -x 10000'
+			set-hook -g client-attached 'resize-window -y 24 -x 10000'
+			set-hook -g client-detached 'resize-window -y 24 -x 10000'
+			set-hook -g client-resized 'resize-window -y 24 -x 10000'
+
+			#Default key bindings (only here for info)
+			#Ctrl-b l (Move to the previously selected window)
+			#Ctrl-b w (List all windows / window numbers)
+			#Ctrl-b <window number> (Move to the specified window number, the default bindings are from 0 – 9)
+			#Ctrl-b q  (Show pane numbers, when the numbers show up type the key to goto that pane)
+
+			#Ctrl-b f <window name> (Search for window name)
+			#Ctrl-b w (Select from interactive list of windows)
+
+			#Copy/ scroll mode
+			#Ctrl-b [ (in copy mode you can navigate the buffer including scrolling the history. Use vi or emacs-style key bindings in copy mode. The default is emacs. To exit copy mode use one of the following keybindings: vi q emacs Esc)
+			EOF
+			echo "$(date +"%Y-%m-%d %H:%M:%S") [$VERSION] [$NAME] [INFO] (Server tmux configuration) Tmux configuration for server installed successfully." | tee -a "$LOG_SCRIPT"
+		fi
+	fi
 }
 
 #---------------------------
@@ -1260,19 +1140,9 @@ script_config_steam() {
 	echo ""
 	read -p "Do you want to use steam to download the game files and be resposible for maintaining them? (y/n): " INSTALL_STEAMCMD_ENABLE
 	if [[ "$INSTALL_STEAMCMD_ENABLE" =~ ^([yY][eE][sS]|[yY])$ ]]; then
-		while [[ "$INSTALL_STEAMCMD_SUCCESS" != "0" ]]; do
-			read -p "Enter your Steam username: " INSTALL_STEAMCMD_UID
-			echo ""
-			read -p "Enter your Steam password: " INSTALL_STEAMCMD_PSW
-			steamcmd +login $INSTALL_STEAMCMD_UID $INSTALL_STEAMCMD_PSW +quit
-			INSTALL_STEAMCMD_SUCCESS=$?
-			if [[ "$INSTALL_STEAMCMD_SUCCESS" == "0" ]]; then
-				echo "Steam login for $INSTALL_STEAMCMD_UID: SUCCEDED!"
-			elif [[ "$INSTALL_STEAMCMD_SUCCESS" != "0" ]]; then
-				echo "Steam login for $INSTALL_STEAMCMD_UID: FAILED!"
-				echo "Please try again."
-			fi
-		done
+		if [[ "$STEAMCMD_UID" == "disabled" ]] && [[ "$STEAMCMD_PSW" == "disabled" ]]; then
+			script_steamcmd_credentials
+		fi
 
 		echo ""
 		read -p "Do you have a Steam Guard Authentication app installed and configured? (y/n): " INSTALL_STEAMGUARD_CLI_ENABLE
@@ -1911,15 +1781,12 @@ case "$1" in
 		echo ""
 		echo "Server and console managment:"
 		echo -e "${GREEN}start        ${RED}- ${GREEN}Start the server. If the server number is not specified the function will start all servers.${NC}"
-		echo -e "${GREEN}start_no_err ${RED}- ${GREEN}Start the server but don't require confimation if in failed state.${NC}"
 		echo -e "${GREEN}stop         ${RED}- ${GREEN}Stop the server. If the server number is not specified the function will stop all servers.${NC}"
 		echo -e "${GREEN}restart      ${RED}- ${GREEN}Restart the server. If the server number is not specified the function will restart all servers.${NC}"
 		echo -e "${GREEN}attach       ${RED}- ${GREEN}Attaches to the tmux session of the specified server.${NC}"
 		echo ""
 		echo "Backup managment:"
 		echo -e "${GREEN}backup        ${RED}- ${GREEN}Backup files, if server running or not.${NC}"
-		echo -e "${GREEN}autobackup    ${RED}- ${GREEN}Automaticly backup files when server running.${NC}"
-		echo -e "${GREEN}delete_backup ${RED}- ${GREEN}Delete old backups.${NC}"
 		echo ""
 		echo "Steam managment:"
 		echo -e "${GREEN}update        ${RED}- ${GREEN}Update the server, if the server is running it will save it, shut it down, update it and restart it.${NC}"
@@ -1969,9 +1836,6 @@ case "$1" in
 	start)
 		script_start
 		;;
-	start_no_err)
-		script_start_ignore_errors
-		;;
 	stop)
 		script_stop
 		;;
@@ -1989,13 +1853,6 @@ case "$1" in
 	backup)
 		script_backup
 		;;
-	autobackup)
-		script_autobackup
-		;;
-	delete_backup)
-		script_deloldbackup
-		;;
-
 #---------------------------
 #Steam managment
 	update)
