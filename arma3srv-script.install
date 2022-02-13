@@ -1,9 +1,19 @@
 post_install() {
-  getent group arma3srv >/dev/null || groupadd --system arma3srv
-  getent passwd arma3srv >/dev/null || useradd --system -g arma3srv \
-    -d /srv/arma3srv/ -s /bin/bash arma3srv
+	getent group arma3srv >/dev/null || groupadd --system arma3srv
+	getent passwd arma3srv >/dev/null || useradd --system -g arma3srv -d /srv/arma3srv/ -s /bin/bash arma3srv
 
-  chown -R arma3srv:arma3srv srv/arma3srv
-  loginctl enable-linger arma3srv
-  systemctl start user@$(id -u arma3srv).service
+	chown -R arma3srv:arma3srv srv/arma3srv
+	loginctl enable-linger arma3srv
+	systemctl start user@$(id -u arma3srv).service
+}
+
+post_upgrade() {
+	chown -R arma3srv:arma3srv srv/arma3srv/.config/systemd/user
+	chown arma3srv:arma3srv srv/arma3srv/*
+}
+
+post_remove() {
+	loginctl disable-linger arma3srv
+	systemctl stop user@$(id -u arma3srv).service
+	userdel --remove arma3srv
 }
