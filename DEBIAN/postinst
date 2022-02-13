@@ -1,6 +1,5 @@
 getent group arma3srv >/dev/null || groupadd --system arma3srv
-getent passwd arma3srv >/dev/null || useradd --system -g arma3srv \
-  -d /srv/arma3srv/ -s /bin/bash arma3srv
+getent passwd arma3srv >/dev/null || useradd --system -g arma3srv -d /srv/arma3srv/ -s /bin/bash arma3srv
 
 install -dm700 srv/arma3srv/backups
 install -dm700 srv/arma3srv/config

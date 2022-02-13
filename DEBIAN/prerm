@@ -1,0 +1,2 @@
+loginctl disable-linger arma3srv
+systemctl stop user@$(id -u arma3srv).service
