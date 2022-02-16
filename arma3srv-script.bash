@@ -21,7 +21,7 @@
 
 #Static script variables
 export NAME="Arma3Srv" #Name of the tmux session
-export VERSION="1.0-8" #Package and script version
+export VERSION="1.0-9" #Package and script version
 export SERVICE_NAME="arma3srv" #Name of the service files, user, script and script log
 export LOG_DIR="/srv/$SERVICE_NAME/logs" #Location of the script's log files.
 export LOG_STRUCTURE="$LOG_DIR/$(date +"%Y")/$(date +"%m")/$(date +"%d")" #Folder structure of the script's log files.
@@ -143,6 +143,7 @@ script_email_message() {
 	mail -r "$EMAIL_SENDER ($1)" -s "$2" $EMAIL_RECIPIENT <<- EOF
 	$3
 	EOF
+}
 
 #--------------------------
 
@@ -742,19 +743,19 @@ script_update_mods() {
 				echo "$(date +"%Y-%m-%d %H:%M:%S") [$VERSION] [$NAME] [INFO] (Mod Update) Available: $AVAILABLE_VERSION_MOD" | tee -a "$LOG_SCRIPT"
 
 				if [[ "$STEAMGUARD_CLI" == "1" ]]; then
-					steamcmd +force_install_dir $SRV_DIR/ +login $STEAMCMD_UID $STEAMCMD_PSW $(steamguard) +workshop_download_item $APPID_WORKSHOP $MOD_ID +quit
+					steamcmd +force_install_dir $SRV_DIR/ +login $STEAMCMD_UID $STEAMCMD_PSW $(steamguard) +workshop_download_item $WORKSHOP_APPID $MOD_ID +quit
 				else
-					steamcmd +force_install_dir $SRV_DIR/ +login $STEAMCMD_UID $STEAMCMD_PSW +workshop_download_item $APPID_WORKSHOP $MOD_ID +quit
+					steamcmd +force_install_dir $SRV_DIR/ +login $STEAMCMD_UID $STEAMCMD_PSW +workshop_download_item $WORKSHOP_APPID $MOD_ID +quit
 				fi
 
-				ln -s $SRV_DIR/steamapps/workshop/content/$APPID_WORKSHOP/$MOD_ID $SRV_DIR/@${MOD_NAME}
+				ln -s $SRV_DIR/steamapps/workshop/content/$WORKSHOP_APPID/$MOD_ID $SRV_DIR/@${MOD_NAME}
 
-				if [ -f "$SRV_DIR/steamapps/workshop/content/$APPID_WORKSHOP/keys/*.bikey" ]; then
-					cp -rf $SRV_DIR/steamapps/workshop/content/$APPID_WORKSHOP/keys/*.bikey $SRV_DIR/keys/
+				if [ -f "$SRV_DIR/steamapps/workshop/content/$WORKSHOP_APPID/keys/*.bikey" ]; then
+					cp -rf $SRV_DIR/steamapps/workshop/content/$WORKSHOP_APPID/keys/*.bikey $SRV_DIR/keys/
 				fi
 
-				if [ -f "$SRV_DIR/steamapps/workshop/content/$APPID_WORKSHOP/key/*.bikey" ]; then
-					cp -rf $SRV_DIR/steamapps/workshop/content/$APPID_WORKSHOP/key/*.bikey $SRV_DIR/keys/
+				if [ -f "$SRV_DIR/steamapps/workshop/content/$WORKSHOP_APPID/key/*.bikey" ]; then
+					cp -rf $SRV_DIR/steamapps/workshop/content/$WORKSHOP_APPID/key/*.bikey $SRV_DIR/keys/
 				fi
 
 				echo "$AVAILABLE_VERSION_MOD" > $UPDATE_DIR/mods/$MOD_NAME.mod_version
@@ -1254,7 +1255,7 @@ script_config_steam() {
 					MISSION_PBO="Your mission file name without the .pbo extension"
 					echo ""
 					read -p "Install custom modset? (y/n): " MOD_LIST_CUSTOM
-					if [[ "$MODS_ANTISTASI_MODSET_INSTALL" =~ ^([yY][eE][sS]|[yY])$ ]]; then
+					if [[ "$MOD_LIST_CUSTOM" =~ ^([yY][eE][sS]|[yY])$ ]]; then
 						echo ""
 						read -p "Enter custom mod names (without spaces or caps) and their workshop ids (ex: cba_a3-450814997,ace-463939057): " MOD_LIST_INSTALL
 					else
