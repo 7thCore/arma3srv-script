@@ -2,7 +2,7 @@
 
 Arma 3 dedicated server script for the Linux operating system. Coded to take full advantage of Linux's systemd service management. Pre-built packages are available for Arch and Debian based distributions for easy installation. More details available on the project's wiki page.
 
----
+-------------------------
 
 Check the wiki for detailed instructions:
 
@@ -18,7 +18,7 @@ Pre-built packages available for Arch and Debian based distributions:
 
 # Donation
 
-If this project help you in any way, please consider donating.
+If this project help you in any way, please consider donating. :)
 
 [![Donate](https://img.shields.io/badge/Donate-PayPal-green.svg)](https://www.paypal.com/donate/?hosted_button_id=7DNGNW7TTXHFY)
 
