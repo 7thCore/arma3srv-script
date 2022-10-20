@@ -21,7 +21,7 @@
 
 #Static script variables
 export NAME="Arma3Srv" #Name of the tmux session
-export VERSION="1.1-1" #Package and script version
+export VERSION="1.1-2" #Package and script version
 export SERVICE_NAME="arma3srv" #Name of the service files, user, script and script log
 export LOG_DIR="/srv/$SERVICE_NAME/logs" #Location of the script's log files.
 export LOG_STRUCTURE="$LOG_DIR/$(date +"%Y")/$(date +"%m")/$(date +"%d")" #Folder structure of the script's log files.
@@ -1911,7 +1911,7 @@ case "$1" in
 	echo -e "${GREEN}Configuration and installation${RED}: ${GREEN}config_script, config_steam, config_discord, config_email${NC}"
 	echo -e "${GREEN}Server services managment${RED}: ${GREEN}enable_services, disable_services, reload_services${NC}"
 	echo -e "${GREEN}Server and console managment${RED}: ${GREEN}start, start_no_err, stop, restart, save, attach${NC}"
-	echo -e "${GREEN}Backup managment${RED}: ${GREEN}backup, autobackup, delete_backup${NC}"
+	echo -e "${GREEN}Backup managment${RED}: ${GREEN}backup${NC}"
 	echo -e "${GREEN}Steam managment${RED}: ${GREEN}update, update_mods, verify, change_branch${NC}"
 	echo -e "${GREEN}Game specific functions${RED}: ${GREEN}delete_save${NC}"
 	exit 1
