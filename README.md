@@ -20,7 +20,7 @@ Pre-built packages available for Arch and Debian based distributions:
 
 For any problems you may be having, create a new thread in the appropriate support channel on my Discord server.
 
-[![Discord](https://img.shields.io/discord/634022961162223658?color=blueviolet&label=Discord&logo=Discord)](https://discord.gg/adzYnwvYUj)
+[![Discord](https://img.shields.io/discord/634022961162223658?color=brightgreen&label=Discord&logo=Discord)](https://discord.gg/adzYnwvYUj)
 
 -------------------------
 
